@@ -1,0 +1,13 @@
+data/
+.DS_Store
+.vscode/
+result.txt
+debug.txt
+code_craft
+build/
+tag_rank.log
+logs/
+subbmit/
+src/debug
+src/code_craft
+replay/
