@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 #include <string>
+#include <tuple>
 #include <algorithm>
 
 Point::Point(int disk_id, int point_id)
@@ -30,26 +31,27 @@ std::vector<int> Disk::write(int size, int obj_id, int tag, int tag_skew, bool i
   // 如果到达end还没有足够的空余空间，那么返回空
   // 如果这是该对象的最后一个副本，那么start应该为cell_num+1,然后end应该为real_cell_num
 
-  int t_rank = TAG_RANK[tag] + tag_skew;
+  // int t_rank = TAG_RANK[tag] + tag_skew;
 
-  if (t_rank > 15 || t_rank < 0) 
-  {
-    return std::vector<int>();
-  }
+  // if (t_rank > 15 || t_rank < 0)
+  // {
+  //   return std::vector<int>();
+  // }
 
-  bool is_f_to_b = tag_skew >= 0;
+  // bool is_f_to_b = tag_skew >= 0;
 
-  int start = DISK_START[t_rank];   // 开始找寻的位置
-  int end = DISK_START[t_rank + 1]; // 结束找寻的位置
+  // int start = DISK_START[t_rank];   // 开始找寻的位置
+  // int end = DISK_START[t_rank + 1]; // 结束找寻的位置
 
-  int this_cell_num = this->cell_num+1;
+  int start = 1;                // 开始找寻的位置
+  int end = this->cell_num + 1; // 结束找寻的位置
+  bool is_f_to_b = true;
 
   bool is_restrict = true;
   if (is_last_rep)
   {
     start = this->cell_num + 1;
     end = REAL_CELL_NUM;
-    this_cell_num = REAL_CELL_NUM;
     is_restrict = false;
     is_f_to_b = true;
   }
@@ -100,24 +102,24 @@ std::vector<int> Disk::write(int size, int obj_id, int tag, int tag_skew, bool i
   }
 
   count = 0;
-  std::vector<int> wrote_blk_id(size);
+  std::vector<int> wrote_cell_id(size);
   while (count < size)
   {
     if (this->cells[start].obj_id == 0)
     {
       this->cells[start].obj_id = obj_id;
       this->cells[start].block_id = count;
-      wrote_blk_id[count] = start;
+      wrote_cell_id[count] = start;
       count++;
     }
     move_point(start, is_f_to_b, is_restrict);
   }
 
-  if(!is_last_rep)
-    objects->at(obj_id).write_area = t_rank;
-    // objects->at(obj_id).write_area = TAG_RANK[tag];
+  // if(!is_last_rep)
+  // objects->at(obj_id).write_area = t_rank;
+  // objects->at(obj_id).write_area = TAG_RANK[tag];
 
-  return wrote_blk_id;
+  return wrote_cell_id;
 }
 
 Disk::Disk(int disk_id, int cell_num, int init_token, std::unordered_map<int, Object> *objects, std::unordered_map<int, Request> *request)
@@ -719,7 +721,6 @@ std::queue<int> Disk::Get_isolate_r(std::string ops, int tag)
   return ans;
 }
 
-
 std::queue<int> Disk::Get_isolate_r2(std::string ops, int tag)
 {
   std::queue<int> ans;
@@ -804,7 +805,6 @@ std::vector<std::pair<int, int>> Disk::per_disk_exchange_cell(std::vector<int> t
   }
   return ops;
 }
-
 
 std::vector<std::pair<int, int>> Disk::per_disk_exchange_cell2(std::vector<int> tag_list)
 {

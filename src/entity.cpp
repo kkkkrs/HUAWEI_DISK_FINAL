@@ -5,7 +5,6 @@ Object::Object() {
   replica.resize(REP_NUM);
   unit.resize(REP_NUM);
   // block_req_num.assign(size,0);
-  last_interview_time = -100;
 }
 
 int Object::not_fin_req_num() {

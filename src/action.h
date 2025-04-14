@@ -14,4 +14,6 @@ void read_action(Manager &MAN);
 
 void change_action(Manager &MAN);
 
+void obj_tag_action(Manager &MAN);
+
 #endif // ACTION_H

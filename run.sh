@@ -1,28 +1,26 @@
 #!/bin/zsh
 
+# 构建项目
 cmake -S ./src -B ./src/build
 cmake --build ./src/build
-sleep 2
-python ./run.py interactor/interactor-live data/sample_official.in "./src/code_craft" "$@"
-# python ./run.py interactor/macos/interactor data/practice.in "./srcpp/code_craft" "$@"
-# python ./run.py interactor/macos/interactor data/sample_extra.in "./srcpp/code_craft" "$@"
-# python ./run.py interactor/macos/interactor data/sample_offical.in "./src/code_craft" "$@"
 
+# 获取第一个参数，表示你想运行的数据集编号
+choice=$1
+shift  # 把第一个参数移除，这样 $@ 就只剩下后续传给程序的参数
 
-# # 切换到 code/build 目录
-# cd code/build
-# # 运行 make 命令
-# make
-
-# echo "构建完成！"
-
-# # 切换回上一级目录
-# cd ..
-# cd ..
-
-# rm -rf replay
-
-# conda activate base
-
-# # 运行 Python 脚本，并将传递给本脚本的所有参数传递给 Python 脚本
-# python code/run.py interactor/macos/interactor data/sample_practice.in "./srcpp/code_craft"
+# 选择要运行的数据集
+case $choice in
+  1)
+    python ./run.py interactor/interactor data/sample_practice_1.in "./src/code_craft" "$@"
+    ;;
+  2)
+    python ./run.py interactor/interactor data/sample_practice_2.in "./src/code_craft" "$@"
+    ;;
+  3)
+    python ./run.py interactor/interactor data/sample_practice_3.in "./src/code_craft" "$@"
+    ;;
+  *)
+    echo "❌ 参数错误！请输入 1、2 或 3 选择数据集。"
+    exit 1
+    ;;
+esac

@@ -15,13 +15,15 @@ public:
   std::vector<int> block_req_num;
   std::deque<int> req_id_list;
 
-  
   int write_area;
-  int last_interview_time;
 
   int not_fin_req_num();
 
   void update_block_req_num();
+
+  std::vector<int> interview_timestamp;
+  int create_timestamp;
+  int delete_timestamp;
 };
 
 struct Request {

@@ -5,9 +5,10 @@
 #include <cstdio>
 #include <cstring>
 
-int main() {
+int main()
+{
 
-  project_init();
+  LOG_INIT();
 
   int T, M, N, V, G, K;
 
@@ -19,28 +20,33 @@ int main() {
 
   int period_num = (T - 1) / FRE_PER_SLICING + 1;
 
-  Manager MAN(N, V, G, M, K, period_num);
-
   printf("OK\n");
-
-  PERIOD = 1;
 
   fflush(stdout);
 
-  for (int i = 1; i <= T + EXTRA_TIME; i++) {
-    TIMESTAMP++;
+  Manager MAN(N, V, G, M, K, period_num);
 
-    // MAN.Statistics();
-    timestamp_action();
-    delete_action(MAN);
-    write_action(MAN);
-    read_action(MAN);
-
-    if (TIMESTAMP % 1800 == 0) {
-      PERIOD++;
-      change_action(MAN);
+  for (int i = 1; i <= 2; i++)
+  {
+    PERIOD = 1;
+    for (TIMESTAMP = 1; TIMESTAMP <= T + EXTRA_TIME; TIMESTAMP++)
+    {
+      timestamp_action();
+      delete_action(MAN);
+      write_action(MAN);
+      read_action(MAN);
+      if (TIMESTAMP % 1800 == 0)
+      {
+        PERIOD++;
+        change_action(MAN);
+      }
+    }
+    IS_FIRST = false;
+    if (i == 1)
+    {
+      obj_tag_action(MAN);
+      MAN.clear();
     }
   }
-
   return 0;
 }

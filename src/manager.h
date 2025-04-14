@@ -10,29 +10,33 @@
 
 class Manager {
 public:
-  Manager(int disk_num, int cell_per_disk, int init_token, int tag_num,
-          int change_times, int period_num);
-
-  Object &write_into(int obj_id, int size, int tag);
+  Manager(int disk_num, int cell_per_disk, int init_token, int tag_num,int change_times, int period_num);
 
   std::pair<std::vector<std::string>, std::vector<int>> read_batch();
 
   std::vector<int> delete_batch(const std::vector<int> &batch);
 
-  void build_request(const std::vector<std::pair<int, int>> &batch);
+  void build_request(const std::vector<std::tuple<int, int>> &batch);
 
   std::vector<int> check_finish(std::vector<std::pair<int, int>> read_list);
+
+  void write_into(std::vector<std::tuple<int, int, int>> wirte_per_timestamp);
 
   std::pair<std::vector<int>,std::vector<std::pair<int,int>>> exchange_cell();
 
   std::vector<int> busy_req();
 
+  bool req_need_busy(int obj_id);
+
   void Statistics();
+
+  void clear();
 
   int disk_num;
   int cell_per_disk;
   int tag_num;
   int period_num;
+  int init_token;
   int init_exchange_time;
   int busy_num_last_period;
   int fin_num_last_period;
@@ -43,7 +47,6 @@ public:
   std::vector<int> tag_write_disk_id;
 
   std::vector<int> tag_list;
-  bool req_need_busy(int obj_id);
 
   std::vector<std::pair<int, int>> may_expired_req;
 
