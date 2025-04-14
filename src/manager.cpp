@@ -136,6 +136,10 @@ void Manager::write_into(std::vector<std::tuple<int, int, int>> wirte_per_timest
 bool Manager::req_need_busy(int obj_id)
 {
 
+  if(objects[obj_id].unit[0][0]>this->cell_per_disk*6/10){
+    return true;
+  }
+
   return false;
 }
 

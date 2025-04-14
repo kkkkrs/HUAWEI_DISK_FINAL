@@ -3,7 +3,7 @@
 
 #include <vector>
 
-#define is_logging (false)
+#define is_logging (true)
 
 #define REP_NUM (3)
 #define EXTRA_TIME (105)

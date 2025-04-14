@@ -140,7 +140,8 @@ void read_action(Manager &MAN)
 
 void change_action(Manager &MAN)
 {
-  if(IS_FIRST){
+  if (IS_FIRST)
+  {
     scanf("%*s %*s");
   }
   printf("GARBAGE COLLECTION\n");
@@ -161,14 +162,25 @@ void change_action(Manager &MAN)
   fflush(stdout);
 }
 
-void obj_tag_action(Manager &MAN){
+void obj_tag_action(Manager &MAN)
+{
+
+  int tag0num = 0;
+  for (auto [obj_id, obj] : MAN.objects)
+  {
+    if(obj.tag==0){
+      tag0num++;
+    }
+  }
+  LOG_INFO("TAG为0的数量为 %d 总数量为 %d",tag0num,MAN.objects.size());
 
   int times = 0;
-  scanf("%d", &times); 
-  for (int x = 0; x < times; x++) {
-      int obj_id,tag;
-      scanf("%d %d",&obj_id,&tag);
-      MAN.objects[obj_id].tag = tag;
+  scanf("%d", &times);
+  for (int x = 0; x < times; x++)
+  {
+    int obj_id, tag;
+    scanf("%d %d", &obj_id, &tag);
+    MAN.objects[obj_id].tag = tag;
   }
-  //首先统计出每种tag的特征信息，然后遍历每一个tag为0的object，给他们加上tag信息
+  // 首先统计出每种tag的特征信息，然后遍历每一个tag为0的object，给他们加上tag信息
 }
