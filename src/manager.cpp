@@ -37,9 +37,9 @@ Manager::Manager(int disk_num, int cell_per_disk, int init_token, int tag_num, i
 
 void Manager::Statistics()
 {
-  LOG_INFO("READ_NUM %d READ_SCORE %d",fin_num,READ_SCORE);
-  LOG_INFO("BUSY_NUM %d BUSY_SCORE %d",busy_num,BUSY_SCORE);
-  LOG_INFO("SCORE %d",SCORE);
+  LOG_INFO("READ_NUM %d READ_SCORE %.2f",fin_num,READ_SCORE);
+  LOG_INFO("BUSY_NUM %d BUSY_SCORE %.2f",busy_num,BUSY_SCORE);
+  LOG_INFO("SCORE %.2f",SCORE);
 }
 
 
@@ -307,7 +307,7 @@ void Manager::write_into_second(std::vector<std::tuple<int, int, int>> wirte_per
 bool Manager::req_need_busy(int obj_id)
 {
 
-  if (objects[obj_id].unit[0][0] > this->cell_per_disk * 8 / 10)
+  if (objects[obj_id].unit[0][0] > this->cell_per_disk * 6 / 10 && objects[obj_id].tag == 0)
   {
     return true;
   }
