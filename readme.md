@@ -63,4 +63,4 @@
 * 在一个period开始的时候
 * 对于tag不为0的区域，统计这些区域的分别请求数量
 * 对于tag为0的区域，将区域分为5-10份，然后依据请求数量除以单元格的数量进行排序
-* 在每个period的TIMESTAMP为300时进行busy_area_num的切换
+* 在每个period的TIMESTAMP为100-300时进行busy_area_num的切换

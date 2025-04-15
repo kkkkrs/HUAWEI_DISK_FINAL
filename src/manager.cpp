@@ -37,11 +37,15 @@ Manager::Manager(int disk_num, int cell_per_disk, int init_token, int tag_num, i
 
 void Manager::Statistics()
 {
-  LOG_INFO("READ_NUM %d READ_SCORE %.2f",fin_num,READ_SCORE);
-  LOG_INFO("BUSY_NUM %d BUSY_SCORE %.2f",busy_num,BUSY_SCORE);
-  LOG_INFO("SCORE %.2f",SCORE);
+  if(IS_FIRST){
+    LOG_INFO("ROUND 1");
+  }else{
+    LOG_INFO("ROUND 2");
+  }
+  LOG_INFO("READ_NUM %d READ_SCORE %.2f", fin_num, READ_SCORE);
+  LOG_INFO("BUSY_NUM %d BUSY_SCORE %.2f", busy_num, BUSY_SCORE);
+  LOG_INFO("SCORE %.2f", SCORE);
 }
-
 
 std::pair<int, int> Manager::find_disk(int tag)
 {
@@ -188,42 +192,41 @@ void Manager::write_into_first(std::vector<std::tuple<int, int, int>> wirte_per_
   }
 }
 
-void Manager::update_tag_rank(){
+void Manager::update_tag_rank()
+{
 
-    DISK_START.clear();
-    TAG_RANK.clear();
-    DISK_START.resize(this->tag_num+1,0);
-    if(IS_FIRST){
-        TAG_RANK = {0,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16};
-        DISK_START[0] = 1;
-        for(int i = 0;i<16;i++){
-          DISK_START[i+1] = this->cell_per_disk /16 + DISK_START[i];
-        }
-        
-    }else{
-      //TODO:
-      TAG_RANK = {0,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16};
-      DISK_START[0] = 1;
-      for(int i = 0;i<16;i++){
-        DISK_START[i+1] = this->cell_per_disk *0.55 /16 + DISK_START[i];
-      }
+  DISK_START.clear();
+  TAG_RANK.clear();
+  DISK_START.resize(this->tag_num + 1, 0);
+  if (IS_FIRST)
+  {
+    TAG_RANK = {0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+    DISK_START[0] = 1;
+    for (int i = 0; i < 16; i++)
+    {
+      DISK_START[i + 1] = this->cell_per_disk * 0.33 / 16 + DISK_START[i];
     }
+  }
+  else
+  {
+    // TODO:
+    TAG_RANK = {0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+    DISK_START[0] = 1;
+    for (int i = 0; i < 16; i++)
+    {
+      DISK_START[i + 1] = this->cell_per_disk * 0.55 / 16 + DISK_START[i];
+    }
+  }
 }
 
 void Manager::write_into_second(std::vector<std::tuple<int, int, int>> wirte_per_timestamp)
 {
-  for (auto [obj_id, size, tag] : wirte_per_timestamp)
+  for (auto [obj_id, size, _] : wirte_per_timestamp)
   {
-    // 对于tag不为0的对象
-    // 首先根据tag选择区域，在五个磁盘中找到该区域的空闲区间最大的一个磁盘号返回，并且返回空闲区间大小
-    // 然后判断空闲区间大小是否能够写入，如果可以就直接写入
-    // 如果空闲区间大小不够，那么就继续向tag两边的区域延伸
-    int disk_id = this->tag_write_disk_id[tag]; // 记录本体存在哪一个磁盘，副本在这上面+5
 
-    // objects[obj_id].size = size;
-    tag = objects[obj_id].tag;
+    int tag = objects[obj_id].tag;
+    int disk_id = this->tag_write_disk_id[tag]; // 记录本体存在哪一个磁盘，副本在这上面+5
     objects[obj_id].block_req_num.assign(size, 0);
-    // objects[obj_id].create_timestamp = TIMESTAMP;
 
     int tag_skew = 0;
 
@@ -281,6 +284,7 @@ void Manager::write_into_second(std::vector<std::tuple<int, int, int>> wirte_per
         {
           tmp = disk[disk_id].write_first(size, obj_id, tag, 0 - tag_skew, is_last_rep);
         }
+
       }
 
       // 现在temp里面存放的是 副本存的cell序列
@@ -307,7 +311,8 @@ void Manager::write_into_second(std::vector<std::tuple<int, int, int>> wirte_per
 bool Manager::req_need_busy(int obj_id)
 {
 
-  if (objects[obj_id].unit[0][0] > this->cell_per_disk * 6 / 10 && objects[obj_id].tag == 0)
+  // if (objects[obj_id].unit[0][0] > this->cell_per_disk * 82 / 100 && objects[obj_id].tag == 0)
+  if (objects[obj_id].unit[0][0] > this->cell_per_disk * 82 / 100)
   {
     return true;
   }
@@ -546,8 +551,13 @@ std::pair<std::vector<int>, std::vector<std::pair<int, int>>> Manager::exchange_
 
 void Manager::clear()
 {
-  request.clear();
+  SCORE = 0;
+  BUSY_SCORE = 0;
+  READ_SCORE = 0;
+  busy_num = 0;
+  fin_num = 0;
 
+  request.clear();
   this->fin_num_last_period = 0;
   tag_write_disk_id.clear();
   this->tag_write_disk_id.assign(tag_num + 1, 1);
@@ -566,4 +576,6 @@ void Manager::clear()
     disk[i].mirror_point.push_back(&disk[mirror_disk].point[1]);
     disk[i].mirror_point.push_back(&disk[mirror_disk].point[2]);
   }
+
+  
 }

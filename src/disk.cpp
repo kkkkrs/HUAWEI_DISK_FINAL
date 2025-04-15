@@ -48,28 +48,35 @@ std::vector<int> Disk::write_first(int size, int obj_id, int tag, int tag_skew, 
   int t_rank = TAG_RANK[tag] + tag_skew;
 
   int start,end;
+  bool is_f_to_b = tag_skew >= 0;
+  bool is_restrict = true;
+
+
   if (t_rank > 15 || t_rank < 0)
   {
-    tag = 0;
+    if(TAG_RANK[tag]+tag_skew>15&&TAG_RANK[tag]-tag_skew<0){
+      tag = 0;
+    }else{
+      return std::vector<int>();
+    }
   }else{
     start = DISK_START[t_rank];   // 开始找寻的位置
     end = DISK_START[t_rank + 1]; // 结束找寻的位置
   }
 
-  bool is_f_to_b = tag_skew >= 0;
-
   if (tag == 0 && !is_last_rep)
   {
-    //找一个空闲位置最多的区域的，然后将该对象倒着写入
-    t_rank = find_min_area();
-    start = DISK_START[t_rank];
-    end = DISK_START[t_rank+1];
-    is_f_to_b = false;
+    is_f_to_b = true;
+    start = DISK_START[16];
+    end = this->cell_num+1;
+    if(tag_skew>5){
+      start = 1;
+      end = this->cell_num+1;
+    }
   }
 
   // LOG_INFO("TAG %d START %d END %d",tag,start,end);
 
-  bool is_restrict = true;
   if (is_last_rep)
   {
     start = this->cell_num + 1;

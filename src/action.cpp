@@ -168,12 +168,13 @@ void obj_tag_action(Manager &MAN)
   int tag0num = 0;
   for (auto [obj_id, obj] : MAN.objects)
   {
-    if(obj.tag==0){
+    if (obj.tag == 0)
+    {
       tag0num++;
     }
   }
-  LOG_INFO("TAG为0的数量为 %d 总数量为 %d",tag0num,MAN.objects.size());
-
+  // LOG_INFO("TAG为0的数量为 %d 总数量为 %d",tag0num,MAN.objects.size());
+ 
   int times = 0;
   scanf("%d", &times);
   for (int x = 0; x < times; x++)
