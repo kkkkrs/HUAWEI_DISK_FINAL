@@ -37,7 +37,11 @@ Manager::Manager(int disk_num, int cell_per_disk, int init_token, int tag_num, i
 
 void Manager::Statistics()
 {
+  LOG_INFO("READ_NUM %d READ_SCORE %d",fin_num,READ_SCORE);
+  LOG_INFO("BUSY_NUM %d BUSY_SCORE %d",busy_num,BUSY_SCORE);
+  LOG_INFO("SCORE %d",SCORE);
 }
+
 
 std::pair<int, int> Manager::find_disk(int tag)
 {
@@ -57,7 +61,8 @@ std::pair<int, int> Manager::find_disk(int tag)
       }
       else
       {
-        if(objects[disk[i].cells[right].obj_id].tag!=tag){
+        if (objects[disk[i].cells[right].obj_id].tag != tag)
+        {
           break;
         }
       }
@@ -73,18 +78,20 @@ std::pair<int, int> Manager::find_disk(int tag)
       }
       else
       {
-        if(objects[disk[i].cells[left].obj_id].tag!=tag){
+        if (objects[disk[i].cells[left].obj_id].tag != tag)
+        {
           break;
         }
       }
       left--;
     }
-    if(cur_blank>max_blank_space){
+    if (cur_blank > max_blank_space)
+    {
       max_blank_space = cur_blank;
       max_disk = cur_blank;
     }
   }
-  return {max_disk,max_blank_space};
+  return {max_disk, max_blank_space};
 }
 
 // 单个对象写入
@@ -96,32 +103,6 @@ void Manager::write_into_first(std::vector<std::tuple<int, int, int>> wirte_per_
     // 首先根据tag选择区域，在五个磁盘中找到该区域的空闲区间最大的一个磁盘号返回，并且返回空闲区间大小
     // 然后判断空闲区间大小是否能够写入，如果可以就直接写入
     // 如果空闲区间大小不够，那么就继续向tag两边的区域延伸
-
-    objects[obj_id].size = size;
-    objects[obj_id].tag = tag;
-    objects[obj_id].block_req_num.assign(size, 0);
-    objects[obj_id].create_timestamp = TIMESTAMP;
-    auto [write_disk_id, blank_space] = find_disk(tag);
-
-    // if(blank_space>=size){
-    disk[write_disk_id].write_into(obj_id, size, tag);
-    // }else{
-    //   auto [write_disk_id,blank_space] = find_disk(tag);
-    //   disk[write_disk_id].write_into(obj_id,size,tag);
-    // }
-
-    // 对于tag为0的对象
-    // 选择一个空闲区域最大的磁盘
-    // 在后面65%左右的位置向两边写入
-  }
-}
-
-// 单个对象写入
-void Manager::write_into_second(std::vector<std::tuple<int, int, int>> wirte_per_timestamp)
-{
-  for (auto [obj_id, size, tag] : wirte_per_timestamp)
-  {
-
     int disk_id = this->tag_write_disk_id[tag]; // 记录本体存在哪一个磁盘，副本在这上面+5
 
     objects[obj_id].size = size;
@@ -132,8 +113,6 @@ void Manager::write_into_second(std::vector<std::tuple<int, int, int>> wirte_per
     int tag_skew = 0;
 
     int the_first_write_disk_id = 0;
-
-    bool f_to_b = true;
 
     for (int i = 0; i < REP_NUM; i++)
     {
@@ -158,7 +137,122 @@ void Manager::write_into_second(std::vector<std::tuple<int, int, int>> wirte_per
       }
 
       int temp_cnt = 0;
-      std::vector<int> tmp = disk[disk_id].write(size, obj_id, tag, tag_skew, is_last_rep);
+      std::vector<int> tmp = disk[disk_id].write_first(size, obj_id, tag, tag_skew, is_last_rep);
+
+      while (tmp.empty()) // 在写入磁盘副本的时候不可能为空，因为这个时候的disk_id是本体已经写入的id，磁盘副本一定可以写入
+      {
+        if (!is_last_rep)
+        {
+          disk_id = disk_id % 5 + 1;
+        }
+        else
+        {
+          disk_id = disk_id % this->disk_num + 1;
+        }
+        if (is_last_rep && (disk_id == the_first_write_disk_id + 5 || disk_id == the_first_write_disk_id))
+        {
+          disk_id = disk_id % this->disk_num + 1;
+        }
+        temp_cnt++;
+        if (temp_cnt == 5)
+        {
+          tag_skew++;
+          temp_cnt = 0;
+        }
+
+        tmp = disk[disk_id].write_first(size, obj_id, tag, tag_skew, is_last_rep);
+        if (tmp.empty())
+        {
+          tmp = disk[disk_id].write_first(size, obj_id, tag, 0 - tag_skew, is_last_rep);
+        }
+      }
+
+      // 现在temp里面存放的是 副本存的cell序列
+
+      if (!i) // 现在是第一个副本，我可以直接写入第二个副本
+      {
+        for (int j = 0; j < tmp.size(); j++)
+        {
+          disk[disk_id + 5].cells[tmp[j]].obj_id = obj_id;
+          disk[disk_id + 5].cells[tmp[j]].block_id = j;
+        }
+        objects[obj_id].replica[1] = disk_id + 5;
+        objects[obj_id].unit[1] = tmp;
+      }
+
+      objects[obj_id].replica[i] = disk_id;
+      objects[obj_id].unit[i] = tmp;
+      the_first_write_disk_id = i == 0 ? disk_id : the_first_write_disk_id;
+    }
+    this->tag_write_disk_id[tag] = this->tag_write_disk_id[tag] % 5 + 1;
+  }
+}
+
+void Manager::update_tag_rank(){
+
+    DISK_START.clear();
+    TAG_RANK.clear();
+    DISK_START.resize(this->tag_num+1,0);
+    if(IS_FIRST){
+        TAG_RANK = {0,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16};
+        DISK_START[0] = 1;
+        for(int i = 0;i<16;i++){
+          DISK_START[i+1] = this->cell_per_disk /16 + DISK_START[i];
+        }
+        
+    }else{
+      //TODO:
+      TAG_RANK = {0,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16};
+      DISK_START[0] = 1;
+      for(int i = 0;i<16;i++){
+        DISK_START[i+1] = this->cell_per_disk *0.55 /16 + DISK_START[i];
+      }
+    }
+}
+
+void Manager::write_into_second(std::vector<std::tuple<int, int, int>> wirte_per_timestamp)
+{
+  for (auto [obj_id, size, tag] : wirte_per_timestamp)
+  {
+    // 对于tag不为0的对象
+    // 首先根据tag选择区域，在五个磁盘中找到该区域的空闲区间最大的一个磁盘号返回，并且返回空闲区间大小
+    // 然后判断空闲区间大小是否能够写入，如果可以就直接写入
+    // 如果空闲区间大小不够，那么就继续向tag两边的区域延伸
+    int disk_id = this->tag_write_disk_id[tag]; // 记录本体存在哪一个磁盘，副本在这上面+5
+
+    // objects[obj_id].size = size;
+    tag = objects[obj_id].tag;
+    objects[obj_id].block_req_num.assign(size, 0);
+    // objects[obj_id].create_timestamp = TIMESTAMP;
+
+    int tag_skew = 0;
+
+    int the_first_write_disk_id = 0;
+
+    for (int i = 0; i < REP_NUM; i++)
+    {
+      // i = 0,第一个副本，存在磁盘本体 是 1，2，3，4，5
+      // i = 1,第二个副本，存在磁盘副本 是 6，7，8，9，10
+      if (i == 1)
+      {
+        continue;
+      }
+
+      bool is_last_rep = false; // 判断需不需要写入后三分之一
+
+      if (i == 2) // 对于最后一个副本的情况
+      {
+        is_last_rep = true;
+        disk_id = disk_id + 6;
+        disk_id = disk_id == 11 ? 6 : disk_id;
+        if (rand() % 2)
+        {
+          disk_id -= 5;
+        }
+      }
+
+      int temp_cnt = 0;
+      std::vector<int> tmp = disk[disk_id].write_first(size, obj_id, tag, tag_skew, is_last_rep);
 
       while (tmp.empty()) // 在写入磁盘副本的时候不可能为空，因为这个时候的disk_id是本体已经写入的id，磁盘副本一定可以写入
       {
@@ -182,10 +276,10 @@ void Manager::write_into_second(std::vector<std::tuple<int, int, int>> wirte_per
           temp_cnt = 0;
         }
 
-        tmp = disk[disk_id].write(size, obj_id, tag, tag_skew, is_last_rep);
+        tmp = disk[disk_id].write_first(size, obj_id, tag, tag_skew, is_last_rep);
         if (tmp.empty())
         {
-          tmp = disk[disk_id].write(size, obj_id, tag, 0 - tag_skew, is_last_rep);
+          tmp = disk[disk_id].write_first(size, obj_id, tag, 0 - tag_skew, is_last_rep);
         }
       }
 
@@ -213,7 +307,7 @@ void Manager::write_into_second(std::vector<std::tuple<int, int, int>> wirte_per
 bool Manager::req_need_busy(int obj_id)
 {
 
-  if (objects[obj_id].unit[0][0] > this->cell_per_disk * 6 / 10)
+  if (objects[obj_id].unit[0][0] > this->cell_per_disk * 8 / 10)
   {
     return true;
   }
@@ -338,10 +432,14 @@ std::vector<int> Manager::check_finish(std::vector<std::pair<int, int>> read_lis
     if (time <= 10)
     {
       SCORE += (1 - 0.005 * time) * (objects[request[finish_list[i]].object_id].size + 1) * 0.5;
+      READ_SCORE += (1 - 0.005 * time) * (objects[request[finish_list[i]].object_id].size + 1) * 0.5;
+      fin_num++;
     }
     else
     {
       SCORE += (1.05 - 0.01 * time) * (objects[request[finish_list[i]].object_id].size + 1) * 0.5;
+      READ_SCORE += (1.05 - 0.01 * time) * (objects[request[finish_list[i]].object_id].size + 1) * 0.5;
+      fin_num++;
     }
 
     request.erase(finish_list[i]);
@@ -384,6 +482,9 @@ std::vector<int> Manager::busy_req()
 
       SCORE -= (objects[obj_id].size + 1) * 0.5;
 
+      BUSY_SCORE += (objects[obj_id].size + 1) * 0.5;
+
+      busy_num++;
       // LOG_INFO("TIMESTAMP %d TAG %d BUSY_REQ",TIMESTAMP,objects[obj_id].tag);
 
       objects[obj_id].req_id_list.pop_front();

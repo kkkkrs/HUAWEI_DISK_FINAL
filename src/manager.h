@@ -30,6 +30,8 @@ public:
 
   std::pair<int,int> find_disk(int tag);
 
+  void update_tag_rank();
+
   bool req_need_busy(int obj_id);
 
   void Statistics();

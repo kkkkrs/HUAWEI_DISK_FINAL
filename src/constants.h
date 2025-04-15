@@ -32,6 +32,12 @@ extern int REAL_CELL_NUM;
 extern double SCORE;
 extern bool IS_FIRST;
 
+extern double READ_SCORE;
+extern double BUSY_SCORE;
+extern int fin_num;
+extern int busy_num;
+
+
 extern std::vector<std::vector<int>> DELETE_DATA;
 extern std::vector<std::vector<std::tuple<int, int, int>>> WRITE_DATA;
 extern std::vector<std::vector<std::tuple<int, int>>> READ_DATA;

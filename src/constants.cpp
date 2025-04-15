@@ -8,6 +8,14 @@ int PERIOD = 0;
 
 double SCORE = 0;
 
+double READ_SCORE = 0;
+
+double BUSY_SCORE = 0;
+
+int fin_num = 0;
+
+int busy_num = 0;
+
 bool IS_FIRST = true;
 
 int REAL_CELL_NUM;

@@ -70,8 +70,6 @@ void write_action(Manager &MAN)
     MAN.write_into_second(write_data);
   }
 
-  
-
   for (auto [obj_id, size, tag] : write_data)
   {
     printf("%d\n", obj_id);

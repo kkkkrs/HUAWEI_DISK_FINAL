@@ -21,31 +21,53 @@ Point::Point(int disk_id, int point_id)
   this->reserve_end = -1;
 };
 
-std::vector<int> Disk::write(int size, int obj_id, int tag, int tag_skew, bool is_last_rep)
+int Disk::find_min_area(){
+    int max_blank_space = 0;
+    int max_rank = 0;
+    for(int i = 0;i<=15;i++){
+      int cur_blank_space = 0;
+      int start = DISK_START[i];
+      int end = DISK_START[i+1];
+      while(start!=end){
+          if(cells[start].obj_id==0){
+            cur_blank_space++;
+          }
+          start++;
+      }
+      if(cur_blank_space>max_blank_space){
+        max_blank_space=cur_blank_space;
+        max_rank = i;
+      }
+    }
+    return max_rank;
+}
+
+std::vector<int> Disk::write_first(int size, int obj_id, int tag, int tag_skew, bool is_last_rep)
 {
 
-  // int start = (tag % disk_partition_num) * (this->cell_num /
-  // disk_partition_num) + 1;
+  int t_rank = TAG_RANK[tag] + tag_skew;
 
-  // 在写入的时候，start为该tag的开始，end为该tag的end ，
-  // 如果到达end还没有足够的空余空间，那么返回空
-  // 如果这是该对象的最后一个副本，那么start应该为cell_num+1,然后end应该为real_cell_num
+  int start,end;
+  if (t_rank > 15 || t_rank < 0)
+  {
+    tag = 0;
+  }else{
+    start = DISK_START[t_rank];   // 开始找寻的位置
+    end = DISK_START[t_rank + 1]; // 结束找寻的位置
+  }
 
-  // int t_rank = TAG_RANK[tag] + tag_skew;
+  bool is_f_to_b = tag_skew >= 0;
 
-  // if (t_rank > 15 || t_rank < 0)
-  // {
-  //   return std::vector<int>();
-  // }
+  if (tag == 0 && !is_last_rep)
+  {
+    //找一个空闲位置最多的区域的，然后将该对象倒着写入
+    t_rank = find_min_area();
+    start = DISK_START[t_rank];
+    end = DISK_START[t_rank+1];
+    is_f_to_b = false;
+  }
 
-  // bool is_f_to_b = tag_skew >= 0;
-
-  // int start = DISK_START[t_rank];   // 开始找寻的位置
-  // int end = DISK_START[t_rank + 1]; // 结束找寻的位置
-
-  int start = 1;                // 开始找寻的位置
-  int end = this->cell_num + 1; // 结束找寻的位置
-  bool is_f_to_b = true;
+  // LOG_INFO("TAG %d START %d END %d",tag,start,end);
 
   bool is_restrict = true;
   if (is_last_rep)
@@ -427,11 +449,9 @@ std::string Disk::find_replacement_indices(const std::string &sequence, int pre_
   return ans;
 }
 
-void Disk::write_into(int obj_id,int tag,int size){
+void Disk::write_into(int obj_id, int tag, int size)
+{
   int tag_middle = this->cell_num * 0.33 / 16 * tag;
-
-  
-
 }
 
 std::string Disk::get_ori_ops(int point_id)

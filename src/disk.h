@@ -82,9 +82,11 @@ public:
 
   std::vector<int> clear_area(int area_id);
 
+  int find_min_area();
+
   bool cell_need_change(int cell_id);
 
-  std::vector<int> write(int size, int obj_id, int tag, int is_write_all, bool is_last_rep);
+  std::vector<int> write_first(int size, int obj_id, int tag, int is_write_all, bool is_last_rep);
 
   void move_point(int &point, bool is_f_to_b, bool restrict);
 

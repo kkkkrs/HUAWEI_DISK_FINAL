@@ -29,6 +29,7 @@ int main()
   for (int i = 1; i <= 2; i++)
   {
     PERIOD = 1;
+    MAN.update_tag_rank();
     for (TIMESTAMP = 1; TIMESTAMP <= T + EXTRA_TIME; TIMESTAMP++)
     {
       timestamp_action();
@@ -41,6 +42,7 @@ int main()
         change_action(MAN);
       }
     }
+    MAN.Statistics();
     IS_FIRST = false;
     if (i == 1)
     {
