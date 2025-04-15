@@ -20,11 +20,15 @@ public:
 
   std::vector<int> check_finish(std::vector<std::pair<int, int>> read_list);
 
-  void write_into(std::vector<std::tuple<int, int, int>> wirte_per_timestamp);
+  void write_into_first(std::vector<std::tuple<int, int, int>> wirte_per_timestamp);
+
+  void write_into_second(std::vector<std::tuple<int, int, int>> wirte_per_timestamp);
 
   std::pair<std::vector<int>,std::vector<std::pair<int,int>>> exchange_cell();
 
   std::vector<int> busy_req();
+
+  std::pair<int,int> find_disk(int tag);
 
   bool req_need_busy(int obj_id);
 

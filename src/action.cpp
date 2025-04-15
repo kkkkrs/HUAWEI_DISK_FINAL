@@ -62,13 +62,15 @@ void write_action(Manager &MAN)
       write_data.push_back({write_id, size, tag});
     }
     WRITE_DATA[TIMESTAMP] = write_data;
+    MAN.write_into_first(write_data);
   }
   else
   {
     write_data = WRITE_DATA[TIMESTAMP];
+    MAN.write_into_second(write_data);
   }
 
-  MAN.write_into(write_data);
+  
 
   for (auto [obj_id, size, tag] : write_data)
   {

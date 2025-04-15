@@ -67,6 +67,8 @@ public:
 
   void refresh();
 
+  void write_into(int obj_id,int tag,int size);
+
   std::string find_replacement_indices(const std::string &sequence, int pre_token);
 
   std::string get_ori_ops(int point_id);

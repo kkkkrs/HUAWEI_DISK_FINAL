@@ -39,8 +39,85 @@ void Manager::Statistics()
 {
 }
 
+std::pair<int, int> Manager::find_disk(int tag)
+{
+
+  int max_blank_space = 0;
+  int max_disk = 0;
+  int tag_middle = this->cell_per_disk * 0.33 / tag_num * tag;
+  for (int i = 1; i <= 5; i++)
+  {
+    int cur_blank = 0;
+    int right = tag_middle;
+    while (right <= this->cell_per_disk)
+    {
+      if (disk[i].cells[right].obj_id == 0)
+      {
+        cur_blank++;
+      }
+      else
+      {
+        if(objects[disk[i].cells[right].obj_id].tag!=tag){
+          break;
+        }
+      }
+      right++;
+    }
+
+    int left = tag_middle;
+    while (left >= 0)
+    {
+      if (disk[i].cells[left].obj_id == 0)
+      {
+        cur_blank++;
+      }
+      else
+      {
+        if(objects[disk[i].cells[left].obj_id].tag!=tag){
+          break;
+        }
+      }
+      left--;
+    }
+    if(cur_blank>max_blank_space){
+      max_blank_space = cur_blank;
+      max_disk = cur_blank;
+    }
+  }
+  return {max_disk,max_blank_space};
+}
+
 // 单个对象写入
-void Manager::write_into(std::vector<std::tuple<int, int, int>> wirte_per_timestamp)
+void Manager::write_into_first(std::vector<std::tuple<int, int, int>> wirte_per_timestamp)
+{
+  for (auto [obj_id, size, tag] : wirte_per_timestamp)
+  {
+    // 对于tag不为0的对象
+    // 首先根据tag选择区域，在五个磁盘中找到该区域的空闲区间最大的一个磁盘号返回，并且返回空闲区间大小
+    // 然后判断空闲区间大小是否能够写入，如果可以就直接写入
+    // 如果空闲区间大小不够，那么就继续向tag两边的区域延伸
+
+    objects[obj_id].size = size;
+    objects[obj_id].tag = tag;
+    objects[obj_id].block_req_num.assign(size, 0);
+    objects[obj_id].create_timestamp = TIMESTAMP;
+    auto [write_disk_id, blank_space] = find_disk(tag);
+
+    // if(blank_space>=size){
+    disk[write_disk_id].write_into(obj_id, size, tag);
+    // }else{
+    //   auto [write_disk_id,blank_space] = find_disk(tag);
+    //   disk[write_disk_id].write_into(obj_id,size,tag);
+    // }
+
+    // 对于tag为0的对象
+    // 选择一个空闲区域最大的磁盘
+    // 在后面65%左右的位置向两边写入
+  }
+}
+
+// 单个对象写入
+void Manager::write_into_second(std::vector<std::tuple<int, int, int>> wirte_per_timestamp)
 {
   for (auto [obj_id, size, tag] : wirte_per_timestamp)
   {
@@ -136,7 +213,8 @@ void Manager::write_into(std::vector<std::tuple<int, int, int>> wirte_per_timest
 bool Manager::req_need_busy(int obj_id)
 {
 
-  if(objects[obj_id].unit[0][0]>this->cell_per_disk*6/10){
+  if (objects[obj_id].unit[0][0] > this->cell_per_disk * 6 / 10)
+  {
     return true;
   }
 
