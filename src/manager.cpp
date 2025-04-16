@@ -278,14 +278,12 @@ void Manager::update_tag_rank()
     {
       TAG_RANK[sequence[i]] = i;
       DISK_START[i + 1] = DISK_START[i] + Disk_partition_per_tag[sequence[i]];
-      // LOG_INFO("第 %d 个TAG 是 %d, 开始于 %d",i,sequence[i],DISK_START[i]);
     }
   
     DISK_START[16] = this->disk[1].cell_num;
   }
 
 }
-
 
 
 void Manager::update_tag_list()

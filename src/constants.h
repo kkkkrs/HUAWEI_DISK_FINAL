@@ -22,7 +22,7 @@
 
 #define LEAST_READ_NUM (400) //
 
-#define POINTER_RESTRICTION_RANGE (500) //指针之间的屏蔽范围
+#define POINTER_RESTRICTION_RANGE (600) //指针之间的屏蔽范围
 
 #define jump_req_num_threshold (1.3) //jump需要最小的阈值倍数
 
@@ -32,7 +32,7 @@
 
 #define forecast_window_len (300)
 
-#define slice_len (1800)
+#define slice_len (900)
 
 extern std::vector<int> DISK_START;
 

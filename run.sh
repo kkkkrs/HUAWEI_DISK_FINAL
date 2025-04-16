@@ -4,7 +4,7 @@
 cmake -S ./src -B ./src/build
 cmake --build ./src/build
 
-rm -rf replay
+# rm -rf replay
 
 # 获取第一个参数，表示你想运行的数据集编号
 choice=$1
