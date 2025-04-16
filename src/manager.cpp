@@ -206,7 +206,7 @@ void Manager::update_tag_rank()
     DISK_START[0] = 1;
     for (int i = 0; i < 16; i++)
     {
-      DISK_START[i + 1] = this->cell_per_disk * 0.4 / 16 + DISK_START[i];
+      DISK_START[i + 1] = this->cell_per_disk * FIRST_TAG_AREA / 16 + DISK_START[i];
     }
   }
   else
@@ -298,12 +298,13 @@ void Manager::update_tag_list()
     tag_list.push_back(i);
   }
 
+  if(!IS_FIRST)
   // 修正后的lambda表达式
-  std::sort(tag_list.begin(), tag_list.end(),
-            [this](int a, int b)
-            {
-              return tag_read_per_cell[SLICE][a] > tag_read_per_cell[SLICE][b];
-            });
+    std::sort(tag_list.begin(), tag_list.end(),
+              [this](int a, int b)
+              {
+                return tag_read_per_cell[SLICE][a] > tag_read_per_cell[SLICE][b];
+              });
 
 }
 
@@ -632,9 +633,7 @@ std::pair<std::vector<int>, std::vector<std::pair<int, int>>> Manager::exchange_
   // 处理前五个磁盘，然后接收返回的结果，通过结果更改后面五个磁盘
   for (int i = 1; i <= this->disk_num / 2; i++)
   {
-    if(!IS_FIRST){
       
-
     this->disk[i].exchange_time = init_exchange_time;
 
     std::vector<std::pair<int, int>> tmp = this->disk[i].per_disk_exchange_cell(tag_list);
@@ -654,11 +653,6 @@ std::pair<std::vector<int>, std::vector<std::pair<int, int>>> Manager::exchange_
     ops.insert(ops.end(), tmp2.begin(), tmp2.end());
 
     ops_size.push_back(tmp.size() + tmp2.size());
-
-    }else{
-      ops_size.push_back(0);
-    }
-
   }
 
   ops_size.insert(ops_size.end(), ops_size.begin(), ops_size.end());

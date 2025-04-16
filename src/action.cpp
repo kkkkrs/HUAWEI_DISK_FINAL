@@ -194,5 +194,4 @@ void obj_tag_action(Manager &MAN)
   // for(auto [obj_id,obj]:MAN.objects){
     // LOG_INFO("%d %d",obj_id,obj.tag);
   // }
-  
 }

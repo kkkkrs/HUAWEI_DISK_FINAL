@@ -18,6 +18,8 @@
 
 #define FIRST_Turn_down (72)
 
+#define FIRST_TAG_AREA (0.32)
+
 #define LEAST_READ_NUM (400) //
 
 #define POINTER_RESTRICTION_RANGE (500) //指针之间的屏蔽范围
@@ -28,7 +30,7 @@
 
 #define WINDOW_LEN (30) //15-30
 
-#define forecast_window_len (600)
+#define forecast_window_len (300)
 
 #define slice_len (1800)
 
