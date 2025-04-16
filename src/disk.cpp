@@ -21,25 +21,30 @@ Point::Point(int disk_id, int point_id)
   this->reserve_end = -1;
 };
 
-int Disk::find_min_area(){
-    int max_blank_space = 0;
-    int max_rank = 0;
-    for(int i = 0;i<=15;i++){
-      int cur_blank_space = 0;
-      int start = DISK_START[i];
-      int end = DISK_START[i+1];
-      while(start!=end){
-          if(cells[start].obj_id==0){
-            cur_blank_space++;
-          }
-          start++;
+int Disk::find_min_area()
+{
+  int max_blank_space = 0;
+  int max_rank = 0;
+  for (int i = 0; i <= 15; i++)
+  {
+    int cur_blank_space = 0;
+    int start = DISK_START[i];
+    int end = DISK_START[i + 1];
+    while (start != end)
+    {
+      if (cells[start].obj_id == 0)
+      {
+        cur_blank_space++;
       }
-      if(cur_blank_space>max_blank_space){
-        max_blank_space=cur_blank_space;
-        max_rank = i;
-      }
+      start++;
     }
-    return max_rank;
+    if (cur_blank_space > max_blank_space)
+    {
+      max_blank_space = cur_blank_space;
+      max_rank = i;
+    }
+  }
+  return max_rank;
 }
 
 std::vector<int> Disk::write_first(int size, int obj_id, int tag, int tag_skew, bool is_last_rep)
@@ -47,19 +52,23 @@ std::vector<int> Disk::write_first(int size, int obj_id, int tag, int tag_skew, 
 
   int t_rank = TAG_RANK[tag] + tag_skew;
 
-  int start,end;
+  int start, end;
   bool is_f_to_b = tag_skew >= 0;
   bool is_restrict = true;
 
-
   if (t_rank > 15 || t_rank < 0)
   {
-    if(TAG_RANK[tag]+tag_skew>15&&TAG_RANK[tag]-tag_skew<0){
+    if (TAG_RANK[tag] + tag_skew > 15 && TAG_RANK[tag] - tag_skew < 0)
+    {
       tag = 0;
-    }else{
+    }
+    else
+    {
       return std::vector<int>();
     }
-  }else{
+  }
+  else
+  {
     start = DISK_START[t_rank];   // 开始找寻的位置
     end = DISK_START[t_rank + 1]; // 结束找寻的位置
   }
@@ -68,10 +77,11 @@ std::vector<int> Disk::write_first(int size, int obj_id, int tag, int tag_skew, 
   {
     is_f_to_b = true;
     start = DISK_START[16];
-    end = this->cell_num+1;
-    if(tag_skew>5){
+    end = this->cell_num + 1;
+    if (tag_skew > 5)
+    {
       start = 1;
-      end = this->cell_num+1;
+      end = this->cell_num + 1;
     }
   }
 
@@ -83,11 +93,6 @@ std::vector<int> Disk::write_first(int size, int obj_id, int tag, int tag_skew, 
     end = REAL_CELL_NUM;
     is_restrict = false;
     is_f_to_b = true;
-  }
-
-  if (!is_f_to_b)
-  {
-    std::swap(start, end);
   }
 
   // 寻找一段足够连续的区域
@@ -144,8 +149,8 @@ std::vector<int> Disk::write_first(int size, int obj_id, int tag, int tag_skew, 
     move_point(start, is_f_to_b, is_restrict);
   }
 
-  // if(!is_last_rep)
-  // objects->at(obj_id).write_area = t_rank;
+  if(!is_last_rep&&!IS_FIRST)
+    objects->at(obj_id).write_area = t_rank;
   // objects->at(obj_id).write_area = TAG_RANK[tag];
 
   return wrote_cell_id;
@@ -465,6 +470,14 @@ std::string Disk::get_ori_ops(int point_id)
 {
   int temp_point = this->point[point_id].position;
   std::string ori_ops = "";
+
+  if(!run_first && IS_FIRST){
+    return "1";
+  }
+
+  if(!run_second && !IS_FIRST){
+    return "1";
+  }
 
   if (this->point[point_id].jump_here)
   {
@@ -894,118 +907,6 @@ std::vector<std::pair<int, int>> Disk::per_disk_exchange_cell2(std::vector<int> 
     }
   }
   return ops;
-}
-
-// void Disk::check_jump()
-// {
-//   // 扫描这个磁盘，然后分别记录四个point后面的req_num，将最小的point跳转
-//   std::vector<int> req_num_per_point(4, 0); // 0,1分别代表本磁盘的两个指针req_num,2,3代表镜像磁盘的两个指针
-
-//   int Max_req_num = 0;
-//   int Max_point_position = 1;
-//   int begin = 1;
-//   int end = 1;
-//   int cur_req_num = 0;
-
-//   for (int i = 1; i <= this->cell_num; i++)
-//   {
-
-//     cur_req_num += cell_need_read(end, 0, true, true); // 全部屏蔽
-//     end++;
-
-//     if (i >= this->init_token)
-//     {
-//       cur_req_num -= cell_need_read(begin, 0, true, true);
-//       begin++;
-//     }
-
-//     if (cur_req_num >= Max_req_num)
-//     {
-//       Max_req_num = cur_req_num;
-//       Max_point_position = begin;
-//     }
-
-//     if (i - this->point[1].position >= 0 && i - this->point[1].position < this->init_token)
-//     {
-//       req_num_per_point[0] += cell_need_read(i, 1, false, false);
-//     }
-//     if (i - this->point[2].position >= 0 && i - this->point[2].position < this->init_token)
-//     {
-//       req_num_per_point[1] += cell_need_read(i, 1, false, false);
-//     }
-//     if (i - this->mirror_point[1]->position >= 0 && i - this->mirror_point[1]->position < this->init_token)
-//     {
-//       req_num_per_point[2] += cell_need_read(i, 1, false, false);
-//     }
-//     if (i - this->mirror_point[2]->position >= 0 && i - this->mirror_point[2]->position < this->init_token)
-//     {
-//       req_num_per_point[3] += cell_need_read(i, 1, false, false);
-//     }
-//   }
-
-//   int change_index = -1;
-
-//   for (int i = 0; i <= 3; i++)
-//   {
-//     if (Max_req_num > req_num_per_point[i] * jump_req_num_threshold * 2)
-//     {
-//       if (change_index == -1)
-//       {
-//         change_index = i;
-//       }
-//       else
-//       {
-//         change_index = req_num_per_point[i] < req_num_per_point[change_index] ? i : change_index;
-//       }
-//     }
-//   }
-
-//   // change_index就是需要jump的point下标
-//   if (change_index == 0 || change_index == 1)
-//   {
-//     if (this->point[change_index + 1].since_last_jump == MAX_JUMP_TIME_BEFORE_PRE)
-//     {
-//       this->point[change_index + 1].jump_here = Max_point_position;
-//       this->point[change_index + 1].position = Max_point_position;
-//       this->point[change_index + 1].reserve_end = Max_point_position + POINTER_RESTRICTION_RANGE;
-//     }
-//   }
-//   else if (change_index == 2 || change_index == 3)
-//   {
-//     if (this->mirror_point[change_index - 1]->since_last_jump == MAX_JUMP_TIME_BEFORE_PRE)
-//     {
-//       this->mirror_point[change_index - 1]->jump_here = Max_point_position;
-//       this->mirror_point[change_index - 1]->position = Max_point_position;
-//       this->mirror_point[change_index - 1]->reserve_end = Max_point_position + POINTER_RESTRICTION_RANGE;
-//     }
-//   }
-// }
-
-std::vector<int> Disk::clear_area(int area_id)
-{
-
-  int start = DISK_START[area_id];
-  int end = DISK_START[area_id + 1];
-
-  //  // LOG_INFO("area_id %d start %d end %d", area_id, start, end);
-  std::vector<int> busy_req;
-
-  while (start != end)
-  {
-    int obj_id = cells[start].obj_id;
-    if (obj_id != 0)
-    {
-      while (!(*objects)[obj_id].req_id_list.empty())
-      {
-        busy_req.push_back((*objects)[obj_id].req_id_list.front());
-        (*request).erase((*objects)[obj_id].req_id_list.front());
-        (*objects)[obj_id].req_id_list.pop_front();
-      }
-      (*objects)[obj_id].update_block_req_num();
-    }
-    start++;
-  }
-  return busy_req;
 }
 
 void Disk::update_reserve_end(int point_id)

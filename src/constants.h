@@ -5,12 +5,18 @@
 
 #define is_logging (true)
 
+#define run_first (true)
+
+#define run_second (true)
+
 #define REP_NUM (3)
 #define EXTRA_TIME (105)
 #define FRE_PER_SLICING (1800)
 #define MAX_TIME_SLICING (86400 + EXTRA_TIME + 1)
 
 #define MAX_JUMP_TIME_BEFORE_PRE (13) //3-15
+
+#define FIRST_Turn_down (72)
 
 #define LEAST_READ_NUM (400) //
 
@@ -22,12 +28,17 @@
 
 #define WINDOW_LEN (30) //15-30
 
+#define forecast_window_len (600)
+
+#define slice_len (1800)
+
 extern std::vector<int> DISK_START;
 
 extern std::vector<int> TAG_RANK;
 
 extern int TIMESTAMP; // 仅声明 TIMESTAMP
 extern int PERIOD;
+extern int SLICE;
 extern int REAL_CELL_NUM;
 extern double SCORE;
 extern bool IS_FIRST;

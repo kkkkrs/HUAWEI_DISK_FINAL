@@ -197,27 +197,135 @@ void Manager::update_tag_rank()
 
   DISK_START.clear();
   TAG_RANK.clear();
-  DISK_START.resize(this->tag_num + 1, 0);
+  DISK_START.resize(this->tag_num + 2, 0);
+
+
   if (IS_FIRST)
   {
     TAG_RANK = {0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
     DISK_START[0] = 1;
     for (int i = 0; i < 16; i++)
     {
-      DISK_START[i + 1] = this->cell_per_disk * 0.33 / 16 + DISK_START[i];
+      DISK_START[i + 1] = this->cell_per_disk * 0.4 / 16 + DISK_START[i];
     }
   }
   else
   {
-    // TODO:
-    TAG_RANK = {0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
-    DISK_START[0] = 1;
-    for (int i = 0; i < 16; i++)
-    {
-      DISK_START[i + 1] = this->cell_per_disk * 0.55 / 16 + DISK_START[i];
+
+    //根据分段来对记录每一个时期该tag的数量、读取量、删除量、写入量
+    //对tag进行分区
+    //对tag进行排序
+    //分配每一个tag的start
+
+    int slice_num = MAX_TIME_SLICING/slice_len+1;//145
+
+
+    tag_obj_cnt_per_slice.assign(tag_num+1,std::vector<int>(slice_num+1,0));
+    tag_obj_read_per_slice.assign(tag_num+1,std::vector<int>(slice_num+1,0));
+    std::vector<int> tag_obj_max_cnt(tag_num+1,0);
+
+    for(auto [obj_id,obj]:objects){
+        int begin_slice = obj.create_timestamp/slice_len;
+        int end_slice = obj.delete_timestamp/slice_len;
+        while(begin_slice!=end_slice+1){
+          tag_obj_cnt_per_slice[obj.tag][begin_slice]+=obj.size;
+          tag_obj_max_cnt[obj.tag] = std::max(tag_obj_max_cnt[obj.tag],tag_obj_cnt_per_slice[obj.tag][begin_slice]);
+          begin_slice++;
+        }
+        for(auto read_ts : obj.interview_timestamp){
+          int read_slice = read_ts/slice_len;
+          tag_obj_read_per_slice[obj.tag][read_slice]+=obj.size;
+        }
     }
+
+    tag_read_per_cell.assign(slice_num , std::vector<double>(this->tag_num + 1, 0));
+
+
+    for(int i = 0;i<slice_num;i++){
+      for(int j = 1;j<=tag_num;j++){
+        tag_read_per_cell[i][j] = tag_obj_read_per_slice[j][i] *1.0 / tag_obj_cnt_per_slice[j][i];
+      }
+    }
+
+    std::vector<int> Disk_partition_per_tag(this->tag_num + 1);
+  
+    TAG_RANK.resize(this->tag_num + 1);
+  
+    DISK_START[0] = 1;
+  
+    int sum_object = 0;
+  
+    for (int i = 1; i <= this->tag_num; i++)
+    {
+      sum_object += tag_obj_max_cnt[i];
+    }
+  
+    for (int i = 1; i <= this->tag_num; i++)
+    {
+      Disk_partition_per_tag[i] = tag_obj_max_cnt[i] * 1.0 / sum_object * this->disk[1].cell_num;
+    }
+  
+    LinearTagScheduler scheduler(this->tag_num, slice_num-1);
+  
+    scheduler.load_data(tag_read_per_cell);
+  
+    // 获取最优序列
+    auto sequence = scheduler.get_optimal_sequence();
+
+    sequence.push_back(0);
+  
+    for (int i = 0; i < sequence.size(); i++)
+    {
+      TAG_RANK[sequence[i]] = i;
+      DISK_START[i + 1] = DISK_START[i] + Disk_partition_per_tag[sequence[i]];
+      // LOG_INFO("第 %d 个TAG 是 %d, 开始于 %d",i,sequence[i],DISK_START[i]);
+    }
+  
+    DISK_START[16] = this->disk[1].cell_num;
   }
+
 }
+
+
+
+void Manager::update_tag_list()
+{
+  tag_list.clear();
+  tag_list.reserve(tag_num); // 预分配内存提高效率
+
+  for (int i = 1; i <= tag_num; ++i)
+  { // 建议使用前缀自增
+    tag_list.push_back(i);
+  }
+
+  // 修正后的lambda表达式
+  std::sort(tag_list.begin(), tag_list.end(),
+            [this](int a, int b)
+            {
+              return tag_read_per_cell[SLICE][a] > tag_read_per_cell[SLICE][b];
+            });
+
+}
+
+void Manager::update_busy_area()
+{
+  static double pre_socre = 0;
+
+  busy_area.clear();
+
+  pre_socre = SCORE;
+  busy_area_num = 8;
+
+  for (int i = tag_list.size() - 1; i >= tag_list.size() - busy_area_num; i--)
+  {
+    busy_area.push_back(TAG_RANK[tag_list[i]]);
+    // LOG_INFO("PERIOD %d 放弃的是 %d", PERIOD, TAG_RANK[tag_list[i]]);
+  }
+  this->fin_num_last_period = 0;
+  this->busy_num_last_period = 0;
+}
+
+
 
 void Manager::write_into_second(std::vector<std::tuple<int, int, int>> wirte_per_timestamp)
 {
@@ -312,8 +420,12 @@ bool Manager::req_need_busy(int obj_id)
 {
 
   // if (objects[obj_id].unit[0][0] > this->cell_per_disk * 82 / 100 && objects[obj_id].tag == 0)
-  if (objects[obj_id].unit[0][0] > this->cell_per_disk * 82 / 100)
+  if (IS_FIRST && objects[obj_id].unit[0][0] > this->cell_per_disk * FIRST_Turn_down / 100 )
   {
+    return true;
+  }
+
+  if(!IS_FIRST && find(busy_area.begin(),busy_area.end(),objects[obj_id].write_area)!=busy_area.end()){
     return true;
   }
 
@@ -460,12 +572,12 @@ std::vector<int> Manager::busy_req()
 
   int temp = busy_req_list.size();
 
-  if (TIMESTAMP % 30 == 0)
+  if (TIMESTAMP % 100 == 0)
   {
     may_busy_req.clear();
     for (auto &[req_id, req] : request)
     {
-      if (TIMESTAMP - req.create_timestamp >= 75)
+      if (TIMESTAMP - req.create_timestamp >= 5)
       {
         may_busy_req.insert(req_id);
       }
@@ -520,27 +632,33 @@ std::pair<std::vector<int>, std::vector<std::pair<int, int>>> Manager::exchange_
   // 处理前五个磁盘，然后接收返回的结果，通过结果更改后面五个磁盘
   for (int i = 1; i <= this->disk_num / 2; i++)
   {
-    // this->disk[i].exchange_time = init_exchange_time;
+    if(!IS_FIRST){
+      
 
-    // std::vector<std::pair<int, int>> tmp = this->disk[i].per_disk_exchange_cell(tag_list);
+    this->disk[i].exchange_time = init_exchange_time;
 
-    // this->disk[i].mirror_exchange_cell(tmp);
+    std::vector<std::pair<int, int>> tmp = this->disk[i].per_disk_exchange_cell(tag_list);
 
-    // this->disk[i + 5].mirror_exchange_cell(tmp);
+    this->disk[i].mirror_exchange_cell(tmp);
 
-    // std::vector<std::pair<int, int>> tmp2 = this->disk[i].per_disk_exchange_cell2(tag_list);
+    this->disk[i + 5].mirror_exchange_cell(tmp);
 
-    // this->disk[i].mirror_exchange_cell(tmp2);
+    std::vector<std::pair<int, int>> tmp2 = this->disk[i].per_disk_exchange_cell2(tag_list);
 
-    // this->disk[i + 5].mirror_exchange_cell(tmp2);
+    this->disk[i].mirror_exchange_cell(tmp2);
 
-    // ops.insert(ops.end(), tmp.begin(), tmp.end());
+    this->disk[i + 5].mirror_exchange_cell(tmp2);
 
-    // ops.insert(ops.end(), tmp2.begin(), tmp2.end());
+    ops.insert(ops.end(), tmp.begin(), tmp.end());
 
-    // ops_size.push_back(tmp.size() + tmp2.size());
+    ops.insert(ops.end(), tmp2.begin(), tmp2.end());
 
-    ops_size.push_back(0);
+    ops_size.push_back(tmp.size() + tmp2.size());
+
+    }else{
+      ops_size.push_back(0);
+    }
+
   }
 
   ops_size.insert(ops_size.end(), ops_size.begin(), ops_size.end());
@@ -556,6 +674,7 @@ void Manager::clear()
   READ_SCORE = 0;
   busy_num = 0;
   fin_num = 0;
+  SLICE = 0;
 
   request.clear();
   this->fin_num_last_period = 0;
@@ -576,6 +695,82 @@ void Manager::clear()
     disk[i].mirror_point.push_back(&disk[mirror_disk].point[1]);
     disk[i].mirror_point.push_back(&disk[mirror_disk].point[2]);
   }
+}
 
+void Manager::cal_obj_tag(){
   
+  int window_num = MAX_TIME_SLICING/forecast_window_len + 1;
+
+  std::vector<std::vector<double>> tag_trait(tag_num+1,std::vector<double>(window_num,0));
+
+  std::vector<std::vector<double>> tag_obj_num(tag_num+1,std::vector<double>(window_num,0));
+
+  for(auto [obj_id,obj]:objects){
+    if(obj.tag==0){
+      continue;
+    }
+
+    int begin_wind = obj.create_timestamp/forecast_window_len;
+    int end_wind = obj.delete_timestamp/forecast_window_len;
+
+    while(begin_wind!=end_wind+1){
+      tag_obj_num[obj.tag][begin_wind]++;
+      begin_wind++;
+    }
+
+    for(auto interview_ts : obj.interview_timestamp){
+      int window_index = interview_ts/forecast_window_len;
+      tag_trait[obj.tag][window_index]++;
+    }
+  }
+
+  for(int i =1 ;i<=this->tag_num;i++){
+    for(int j = 0;j<window_num;j++){
+      tag_trait[i][j]/=tag_obj_num[i][j];
+    }
+  }
+  //遍历所有tag0，在有统计的时间段内与已知信息进行比较，选择差异最小的
+
+  for(auto &[obj_id,obj]:objects){
+      if(obj.tag!=0){
+        continue;
+      }
+      //pair<window_index , read_times>
+      std::vector<double> read_per_obj(window_num,0);
+      std::vector<double> distance(tag_num+1,0);
+
+      //在有统计的window，计算与每一个tag的欧氏距离（绝对值？），然后选择最小的
+
+      for(auto interview_ts:obj.interview_timestamp){
+        int window_index = interview_ts/forecast_window_len;
+        // read_per_obj[window_index]+=obj.size;
+        read_per_obj[window_index]++;
+      }
+
+      int begin_wind = obj.create_timestamp/forecast_window_len;
+
+      int end_wind = obj.delete_timestamp/forecast_window_len;
+
+      for(int window_index = 0 ;window_index<window_num;window_index++){
+          if(window_index<=begin_wind||window_index>=end_wind){
+            continue;
+          }
+          for(int tag = 1;tag<=tag_num;tag++){
+            distance[tag]+=(read_per_obj[window_index]-tag_trait[tag][window_index])*(read_per_obj[window_index]-tag_trait[tag][window_index]);
+            // distance[tag]+=abs(read_per_obj[window_index]-tag_trait[tag][window_index]);
+          }
+      }
+      int min_tag = 0;
+      double Min = 100000;
+
+      for(int tag = 1;tag<=tag_num;tag++){
+          if(distance[tag]<Min){
+            Min=distance[tag];
+            min_tag = tag;
+          }
+      }
+      obj.tag = min_tag;
+
+      // LOG_INFO("%d %d",obj_id,obj.tag);
+  }
 }

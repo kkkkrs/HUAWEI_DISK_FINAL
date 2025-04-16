@@ -26,11 +26,25 @@ public:
 
   std::pair<std::vector<int>,std::vector<std::pair<int,int>>> exchange_cell();
 
+
+  std::vector<std::vector<int>> tag_obj_cnt_per_slice;
+  std::vector<std::vector<int>> tag_obj_read_per_slice;
+  std::vector<std::vector<double>> tag_read_per_cell;
+  // std::vector<int> tag_obj_cnt_per_slice;
+
   std::vector<int> busy_req();
+
+  std::vector<int> busy_area;
 
   std::pair<int,int> find_disk(int tag);
 
+  void update_tag_list();
+
+  void update_busy_area();
+
   void update_tag_rank();
+
+  void cal_obj_tag();
 
   bool req_need_busy(int obj_id);
 
@@ -46,6 +60,8 @@ public:
   int init_exchange_time;
   int busy_num_last_period;
   int fin_num_last_period;
+
+  int busy_area_num;
 
   std::vector<Disk> disk;
   std::unordered_map<int, Object> objects;

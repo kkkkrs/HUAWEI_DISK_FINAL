@@ -16,6 +16,8 @@ int fin_num = 0;
 
 int busy_num = 0;
 
+int SLICE = 0;
+
 bool IS_FIRST = true;
 
 int REAL_CELL_NUM;

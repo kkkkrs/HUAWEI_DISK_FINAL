@@ -4,6 +4,8 @@
 Object::Object() {
   replica.resize(REP_NUM);
   unit.resize(REP_NUM);
+  create_timestamp = 0;
+  delete_timestamp = MAX_TIME_SLICING;
   // block_req_num.assign(size,0);
 }
 

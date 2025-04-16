@@ -36,6 +36,13 @@ int main()
       delete_action(MAN);
       write_action(MAN);
       read_action(MAN);
+
+      if(!IS_FIRST && TIMESTAMP%slice_len==0){
+        SLICE++;
+        MAN.update_tag_list();
+        MAN.update_busy_area();
+      }
+
       if (TIMESTAMP % 1800 == 0)
       {
         PERIOD++;
