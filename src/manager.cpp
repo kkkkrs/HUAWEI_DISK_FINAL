@@ -30,15 +30,15 @@ void Manager::Statistics()
 {
   if (IS_FIRST)
   {
-   LOG_INFO("ROUND 1");
+    LOG_INFO("ROUND 1");
   }
   else
   {
-   LOG_INFO("ROUND 2");
+    LOG_INFO("ROUND 2");
   }
- LOG_INFO("READ_NUM %d READ_SCORE %.2f", fin_num, READ_SCORE);
- LOG_INFO("BUSY_NUM %d BUSY_SCORE %.2f", busy_num, BUSY_SCORE);
- LOG_INFO("SCORE %.2f", SCORE);
+  LOG_INFO("READ_NUM %d READ_SCORE %.2f", fin_num, READ_SCORE);
+  LOG_INFO("BUSY_NUM %d BUSY_SCORE %.2f", busy_num, BUSY_SCORE);
+  LOG_INFO("SCORE %.2f", SCORE);
 }
 
 std::pair<int, int> Manager::find_disk(int tag)
@@ -288,8 +288,8 @@ void Manager::update_tag_list()
     std::sort(tag_list.begin(), tag_list.end(),
               [tag_cell_num, tag_read](int a, int b)
               {
-                return tag_read[a] * 1.0 / tag_cell_num[a] > tag_read[b] * 1.0 / tag_cell_num[b];
-                // return tag_read[a] > tag_read[b];
+                // return tag_read[a] * 1.0 / tag_cell_num > tag_read[b] * 1.0 / tag_cell_num[b];
+                return tag_read[a] > tag_read[b];
               });
   }
   else
@@ -305,24 +305,60 @@ void Manager::update_tag_list()
 
 void Manager::update_busy_area()
 {
-  static double pre_socre = 0;
-
   busy_area.clear();
-
-  pre_socre = SCORE;
-  busy_area_num = 0;
-  if (IS_FIRST)
-    busy_area_num = 0;
-
-  for (int i = tag_list.size() - 1; i >= tag_list.size() - busy_area_num; i--)
+  std::vector<int> tag_read_num(this->tag_num + 1, 0);
+  std::vector<int> tag_cell_num(this->tag_num + 1, 0);
+  std::vector<double> readdividecell(this->tag_num + 1, 0.0);
+  std::vector<double> z_scores(this->tag_num + 1, 0.0);
+  
+  for (auto [obj_id, obj] : objects)
   {
-    busy_area.push_back(tag_list[i]);
-//    // LOG_INFO("SLICE %d 放弃的是 %d", SLICE, TAG_RANK[tag_list[i]]);
+    if (obj.tag == 0)
+    {
+      continue;
+    }
+
+    if(obj.write_area!=TAG_RANK[obj.tag]){
+      continue;
+    }
+
+    tag_read_num[obj.tag] += obj.last_slice_interview_times;
+    tag_cell_num[obj.tag] += obj.size;
+  }
+  double sum = 0.0;
+  int valid_count = 0;
+  for (int i = 1; i <= this->tag_num; i++) {
+      if (tag_cell_num[i] != 0) {
+          readdividecell[i] = tag_read_num[i] *1.0 /tag_cell_num[i];
+          // LOG_INFO("%.2f",readdividecell[i]);
+          sum += readdividecell[i];
+          valid_count++;
+      }
   }
 
-  this->fin_num_last_period = 0;
-  this->busy_num_last_period = 0;
-}
+  double avg = sum / valid_count;
+
+  double variance_sum = 0.0;
+  for (int i = 1; i <= this->tag_num; i++) {
+      if (tag_cell_num[i] != 0) {
+          double diff = readdividecell[i] - avg;
+          variance_sum += diff * diff;
+      }
+  }
+  double sigma = (valid_count > 1) ? std::sqrt(variance_sum / (valid_count - 1)) : 0.0;
+  
+  const double Z_THRESHOLD = -0.4; 
+  
+  for (int i = 1; i <= this->tag_num; i++) {  
+          z_scores[i] = (readdividecell[i] - avg) / sigma;
+          if (z_scores[i] < Z_THRESHOLD) {
+             busy_area.push_back(TAG_RANK[i]);
+            //  LOG_INFO("readdividecell %.2f",readdividecell[i]);
+            //  LOG_INFO("TAG %d area %d",i,TAG_RANK[i]);
+          }
+  }
+}  
+
 
 void Manager::write_into_second(std::vector<std::tuple<int, int, int>> wirte_per_timestamp)
 {
@@ -433,10 +469,13 @@ void Manager::build_request(const std::vector<std::tuple<int, int>> &batch)
 
     if (req_need_busy(obj_id))
     {
-      if(IS_FIRST){
+      if (IS_FIRST)
+      {
         busy_req_list.push_back(req_id);
-      }else{
-        drop_req_list.push_back({req_id,TIMESTAMP});  
+      }
+      else
+      {
+        drop_req_list.push_back({req_id, TIMESTAMP});
       }
       continue;
     }
@@ -534,7 +573,7 @@ std::vector<int> Manager::check_finish(std::vector<std::pair<int, int>> read_lis
 
   for (int i = 0; i < finish_list.size(); i++)
   {
-//    //    // LOG_INFO("REQUEST FINISH %d",TIMESTAMP-request[finish_list[i]].create_timestamp);
+    //    //    // LOG_INFO("REQUEST FINISH %d",TIMESTAMP-request[finish_list[i]].create_timestamp);
     int time = TIMESTAMP - request[finish_list[i]].create_timestamp;
 
     if (time <= 10)
@@ -593,7 +632,7 @@ std::vector<int> Manager::busy_req()
       BUSY_SCORE += (objects[obj_id].size + 1) * 0.5;
 
       busy_num++;
-//      // LOG_INFO("TIMESTAMP %d TAG %d BUSY_REQ",TIMESTAMP,objects[obj_id].tag);
+      //      // LOG_INFO("TIMESTAMP %d TAG %d BUSY_REQ",TIMESTAMP,objects[obj_id].tag);
 
       objects[obj_id].req_id_list.pop_front();
       objects[obj_id].update_block_req_num();
@@ -607,13 +646,15 @@ std::vector<int> Manager::busy_req()
     }
   }
 
-  for(auto [req_id,create_ts]:drop_req_list){
-      if(TIMESTAMP - create_ts == 105){
-        busy_req_list.push_back(req_id);
-      }
+  for (auto [req_id, create_ts] : drop_req_list)
+  {
+    if (TIMESTAMP - create_ts == 105)
+    {
+      busy_req_list.push_back(req_id);
+    }
   }
   busy_num_last_period += busy_req_list.size();
-//  // LOG_INFO("TIMESTAMP %d BUSY REQ %d", TIMESTAMP, static_cast<int>(busy_req_list.size()) - temp);
+  //  // LOG_INFO("TIMESTAMP %d BUSY REQ %d", TIMESTAMP, static_cast<int>(busy_req_list.size()) - temp);
 
   return busy_req_list;
 }
@@ -759,7 +800,7 @@ void Manager::cal_obj_tag()
     }
     obj.tag = min_tag;
 
-//    // LOG_INFO("%d %d",obj_id,obj.tag);
+    //    // LOG_INFO("%d %d",obj_id,obj.tag);
   }
 }
 
@@ -861,6 +902,6 @@ void Manager::forecast_tag()
     }
     obj.tag = min_tag;
 
-//    // LOG_INFO("%d %d",obj_id, obj.tag);
+    //    // LOG_INFO("%d %d",obj_id, obj.tag);
   }
 }

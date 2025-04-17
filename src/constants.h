@@ -15,26 +15,27 @@
 #define FRE_PER_SLICING (1800)
 #define MAX_TIME_SLICING (86400 + EXTRA_TIME + 1)
 
-#define LEAST_READ_NUM (500)
 //两轮共同的参数
+
+#define LEAST_READ_NUM (400)
 
 #define MAX_JUMP_TIME_BEFORE_PRE (9) // 3-15
 
-#define POINTER_RESTRICTION_RANGE (400) // 指针之间的屏蔽范围
+#define POINTER_RESTRICTION_RANGE (500) // 指针之间的屏蔽范围
 
 #define WINDOW_LEN (30) // 15-30
 
-#define slice_len (900)
+#define slice_len (300)
 
 //第一轮的参数
 
 #define LEAST_READ_NUM_FIRST (200)
 
-#define FIRST_Turn_down (75)
+#define FIRST_Turn_down (66)
 
 #define FIRST_TAG_AREA (0.5)
 
-#define jump_req_num_threshold_first (1.3) // jump需要最小的阈值倍数
+#define jump_req_num_threshold_first (1.5) // jump需要最小的阈值倍数
 
 #define shield_request_time_first (30) // 第一轮请求屏蔽范围
 
