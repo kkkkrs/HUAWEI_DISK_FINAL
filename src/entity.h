@@ -22,8 +22,10 @@ public:
   void update_block_req_num();
 
   std::vector<int> interview_timestamp;
+  int last_slice_interview_times;
   int create_timestamp;
   int delete_timestamp;
+  bool is_read;
 };
 
 struct Request {

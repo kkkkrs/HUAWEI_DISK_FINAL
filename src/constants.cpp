@@ -26,6 +26,13 @@ std::vector<std::vector<int>> DELETE_DATA(MAX_TIME_SLICING);
 std::vector<std::vector<std::tuple<int, int, int>>> WRITE_DATA(MAX_TIME_SLICING);
 std::vector<std::vector<std::tuple<int, int>>> READ_DATA(MAX_TIME_SLICING);
 
+std::vector<std::ostringstream> delete_actions(MAX_TIME_SLICING);
+std::vector<std::ostringstream> write_actions(MAX_TIME_SLICING);
+std::vector<std::ostringstream> point_actions(MAX_TIME_SLICING);
+std::vector<std::ostringstream> fin_actions(MAX_TIME_SLICING);
+std::vector<std::ostringstream> busy_actions(MAX_TIME_SLICING);
+std::vector<std::ostringstream> gc_actions(MAX_TIME_SLICING);
+
 
 std::vector<int> DISK_START;
 

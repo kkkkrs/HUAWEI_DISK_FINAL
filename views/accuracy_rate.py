@@ -87,7 +87,7 @@ def format_percentage(value):
 
 if __name__ == "__main__":
     # 配置文件路径
-    PRED_FILE = "../logs/日志20250416_141344.log"
+    PRED_FILE = "../logs/日志20250416_213900.log"
     TRUTH_FILE = "../data/sample_practice_map_1.txt"
     
     print("正在加载数据...")

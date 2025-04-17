@@ -24,22 +24,16 @@ Manager::Manager(int disk_num, int cell_per_disk, int init_token, int tag_num, i
   {
     disk.push_back(Disk(i, cell_per_disk, init_token, &objects, &request));
   }
-
-  for (int i = 1; i <= disk_num; i++)
-  {
-    int mirror_disk = i > 5 ? i - 5 : i + 5;
-    disk[i].mirror_disk_id = mirror_disk;
-    disk[i].mirror_point.push_back(&disk[mirror_disk].point[0]);
-    disk[i].mirror_point.push_back(&disk[mirror_disk].point[1]);
-    disk[i].mirror_point.push_back(&disk[mirror_disk].point[2]);
-  }
 }
 
 void Manager::Statistics()
 {
-  if(IS_FIRST){
+  if (IS_FIRST)
+  {
     LOG_INFO("ROUND 1");
-  }else{
+  }
+  else
+  {
     LOG_INFO("ROUND 2");
   }
   LOG_INFO("READ_NUM %d READ_SCORE %.2f", fin_num, READ_SCORE);
@@ -103,11 +97,8 @@ void Manager::write_into_first(std::vector<std::tuple<int, int, int>> wirte_per_
 {
   for (auto [obj_id, size, tag] : wirte_per_timestamp)
   {
-    // 对于tag不为0的对象
-    // 首先根据tag选择区域，在五个磁盘中找到该区域的空闲区间最大的一个磁盘号返回，并且返回空闲区间大小
-    // 然后判断空闲区间大小是否能够写入，如果可以就直接写入
-    // 如果空闲区间大小不够，那么就继续向tag两边的区域延伸
-    int disk_id = this->tag_write_disk_id[tag]; // 记录本体存在哪一个磁盘，副本在这上面+5
+
+    int disk_id = this->tag_write_disk_id[tag];
 
     objects[obj_id].size = size;
     objects[obj_id].tag = tag;
@@ -118,47 +109,39 @@ void Manager::write_into_first(std::vector<std::tuple<int, int, int>> wirte_per_
 
     int the_first_write_disk_id = 0;
 
+    std::vector<int> rep_here;
+
     for (int i = 0; i < REP_NUM; i++)
     {
-      // i = 0,第一个副本，存在磁盘本体 是 1，2，3，4，5
-      // i = 1,第二个副本，存在磁盘副本 是 6，7，8，9，10
-      if (i == 1)
-      {
-        continue;
-      }
 
-      bool is_last_rep = false; // 判断需不需要写入后三分之一
+      bool is_last_rep = false; // 判断需不需要写入后三分之二
 
-      if (i == 2) // 对于最后一个副本的情况
+      if (i != 0) // 对于最后两个副本的情况
       {
         is_last_rep = true;
-        disk_id = disk_id + 6;
-        disk_id = disk_id == 11 ? 6 : disk_id;
-        if (rand() % 2)
-        {
-          disk_id -= 5;
-        }
+      }
+
+      while (find(rep_here.begin(), rep_here.end(), disk_id) != rep_here.end())
+      {
+        disk_id = disk_id % this->disk_num + 1;
       }
 
       int temp_cnt = 0;
+
       std::vector<int> tmp = disk[disk_id].write_first(size, obj_id, tag, tag_skew, is_last_rep);
 
-      while (tmp.empty()) // 在写入磁盘副本的时候不可能为空，因为这个时候的disk_id是本体已经写入的id，磁盘副本一定可以写入
+      while (tmp.empty())
       {
-        if (!is_last_rep)
-        {
-          disk_id = disk_id % 5 + 1;
-        }
-        else
+        disk_id = disk_id % this->disk_num + 1;
+
+        while (find(rep_here.begin(), rep_here.end(), disk_id) != rep_here.end())
         {
           disk_id = disk_id % this->disk_num + 1;
         }
-        if (is_last_rep && (disk_id == the_first_write_disk_id + 5 || disk_id == the_first_write_disk_id))
-        {
-          disk_id = disk_id % this->disk_num + 1;
-        }
+
         temp_cnt++;
-        if (temp_cnt == 5)
+
+        if (temp_cnt == 10)
         {
           tag_skew++;
           temp_cnt = 0;
@@ -172,23 +155,11 @@ void Manager::write_into_first(std::vector<std::tuple<int, int, int>> wirte_per_
       }
 
       // 现在temp里面存放的是 副本存的cell序列
-
-      if (!i) // 现在是第一个副本，我可以直接写入第二个副本
-      {
-        for (int j = 0; j < tmp.size(); j++)
-        {
-          disk[disk_id + 5].cells[tmp[j]].obj_id = obj_id;
-          disk[disk_id + 5].cells[tmp[j]].block_id = j;
-        }
-        objects[obj_id].replica[1] = disk_id + 5;
-        objects[obj_id].unit[1] = tmp;
-      }
-
       objects[obj_id].replica[i] = disk_id;
       objects[obj_id].unit[i] = tmp;
-      the_first_write_disk_id = i == 0 ? disk_id : the_first_write_disk_id;
+      rep_here.push_back(disk_id);
     }
-    this->tag_write_disk_id[tag] = this->tag_write_disk_id[tag] % 5 + 1;
+    this->tag_write_disk_id[tag] = this->tag_write_disk_id[tag] % this->disk_num + 1;
   }
 }
 
@@ -199,92 +170,93 @@ void Manager::update_tag_rank()
   TAG_RANK.clear();
   DISK_START.resize(this->tag_num + 2, 0);
 
-
   if (IS_FIRST)
   {
-    TAG_RANK = {0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+    TAG_RANK = {16, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
     DISK_START[0] = 1;
     for (int i = 0; i < 16; i++)
     {
       DISK_START[i + 1] = this->cell_per_disk * FIRST_TAG_AREA / 16 + DISK_START[i];
     }
+    DISK_START[17] = this->cell_per_disk+1;
   }
   else
   {
 
-    //根据分段来对记录每一个时期该tag的数量、读取量、删除量、写入量
-    //对tag进行分区
-    //对tag进行排序
-    //分配每一个tag的start
+    // 根据分段来对记录每一个时期该tag的数量、读取量、删除量、写入量
+    // 对tag进行分区
+    // 对tag进行排序
+    // 分配每一个tag的start
 
-    int slice_num = MAX_TIME_SLICING/slice_len+1;//145
+    int slice_num = MAX_TIME_SLICING / slice_len + 1; // 145
 
+    tag_obj_cnt_per_slice.assign(tag_num + 1, std::vector<int>(slice_num + 1, 0));
+    tag_obj_read_per_slice.assign(tag_num + 1, std::vector<int>(slice_num + 1, 0));
+    std::vector<int> tag_obj_max_cnt(tag_num + 1, 0);
 
-    tag_obj_cnt_per_slice.assign(tag_num+1,std::vector<int>(slice_num+1,0));
-    tag_obj_read_per_slice.assign(tag_num+1,std::vector<int>(slice_num+1,0));
-    std::vector<int> tag_obj_max_cnt(tag_num+1,0);
-
-    for(auto [obj_id,obj]:objects){
-        int begin_slice = obj.create_timestamp/slice_len;
-        int end_slice = obj.delete_timestamp/slice_len;
-        while(begin_slice!=end_slice+1){
-          tag_obj_cnt_per_slice[obj.tag][begin_slice]+=obj.size;
-          tag_obj_max_cnt[obj.tag] = std::max(tag_obj_max_cnt[obj.tag],tag_obj_cnt_per_slice[obj.tag][begin_slice]);
-          begin_slice++;
-        }
-        for(auto read_ts : obj.interview_timestamp){
-          int read_slice = read_ts/slice_len;
-          tag_obj_read_per_slice[obj.tag][read_slice]+=obj.size;
-        }
+    for (auto [obj_id, obj] : objects)
+    {
+      int begin_slice = obj.create_timestamp / slice_len;
+      int end_slice = obj.delete_timestamp / slice_len;
+      while (begin_slice != end_slice + 1)
+      {
+        tag_obj_cnt_per_slice[obj.tag][begin_slice] += obj.size;
+        tag_obj_max_cnt[obj.tag] = std::max(tag_obj_max_cnt[obj.tag], tag_obj_cnt_per_slice[obj.tag][begin_slice]);
+        begin_slice++;
+      }
+      for (auto read_ts : obj.interview_timestamp)
+      {
+        int read_slice = read_ts / slice_len;
+        tag_obj_read_per_slice[obj.tag][read_slice] += obj.size;
+      }
     }
 
-    tag_read_per_cell.assign(slice_num , std::vector<double>(this->tag_num + 1, 0));
+    tag_read_per_cell.assign(slice_num, std::vector<double>(this->tag_num + 1, 0));
 
-
-    for(int i = 0;i<slice_num;i++){
-      for(int j = 1;j<=tag_num;j++){
-        tag_read_per_cell[i][j] = tag_obj_read_per_slice[j][i] *1.0 / tag_obj_cnt_per_slice[j][i];
+    for (int i = 0; i < slice_num; i++)
+    {
+      for (int j = 1; j <= tag_num; j++)
+      {
+        tag_read_per_cell[i][j] = tag_obj_read_per_slice[j][i] * 1.0 / tag_obj_cnt_per_slice[j][i];
       }
     }
 
     std::vector<int> Disk_partition_per_tag(this->tag_num + 1);
-  
+
     TAG_RANK.resize(this->tag_num + 1);
-  
+
     DISK_START[0] = 1;
-  
+
     int sum_object = 0;
-  
+
     for (int i = 1; i <= this->tag_num; i++)
     {
       sum_object += tag_obj_max_cnt[i];
     }
-  
+
     for (int i = 1; i <= this->tag_num; i++)
     {
       Disk_partition_per_tag[i] = tag_obj_max_cnt[i] * 1.0 / sum_object * this->disk[1].cell_num;
     }
-  
-    LinearTagScheduler scheduler(this->tag_num, slice_num-1);
-  
+
+    LinearTagScheduler scheduler(this->tag_num, slice_num - 1);
+
     scheduler.load_data(tag_read_per_cell);
-  
+
     // 获取最优序列
     auto sequence = scheduler.get_optimal_sequence();
 
     sequence.push_back(0);
-  
+
     for (int i = 0; i < sequence.size(); i++)
     {
       TAG_RANK[sequence[i]] = i;
       DISK_START[i + 1] = DISK_START[i] + Disk_partition_per_tag[sequence[i]];
     }
-  
+
     DISK_START[16] = this->disk[1].cell_num;
   }
-
 }
-
 
 void Manager::update_tag_list()
 {
@@ -296,14 +268,40 @@ void Manager::update_tag_list()
     tag_list.push_back(i);
   }
 
-  if(!IS_FIRST)
-  // 修正后的lambda表达式
+  if (IS_FIRST)
+  {
+    // 根据目前所有的区域前面900个时间片的读取量除以区域中cell的数量来对区域进行排序
+    std::vector<int> tag_cell_num(this->tag_num + 1, 0);
+    std::vector<int> tag_read(this->tag_num + 1, 0);
+
+    for (auto [obj_id, obj] : objects)
+    {
+      if (obj.tag == 0)
+      {
+        obj.last_slice_interview_times = 0;
+        continue;
+      }
+      tag_cell_num[obj.tag] += obj.size;
+      tag_read[obj.tag] += obj.last_slice_interview_times;
+      obj.last_slice_interview_times = 0;
+    }
+    // 修正后的lambda表达式
+    std::sort(tag_list.begin(), tag_list.end(),
+              [tag_cell_num, tag_read](int a, int b)
+              {
+                return tag_read[a] * 1.0 / tag_cell_num[a] > tag_read[b] * 1.0 / tag_cell_num[b];
+                // return tag_read[a] > tag_read[b];
+              });
+  }
+  else
+  {
+    // 修正后的lambda表达式
     std::sort(tag_list.begin(), tag_list.end(),
               [this](int a, int b)
               {
                 return tag_read_per_cell[SLICE][a] > tag_read_per_cell[SLICE][b];
               });
-
+  }
 }
 
 void Manager::update_busy_area()
@@ -313,18 +311,18 @@ void Manager::update_busy_area()
   busy_area.clear();
 
   pre_socre = SCORE;
-  busy_area_num = 8;
+  busy_area_num = 0;
+  if (IS_FIRST)
+    busy_area_num = 0;
 
   for (int i = tag_list.size() - 1; i >= tag_list.size() - busy_area_num; i--)
   {
-    busy_area.push_back(TAG_RANK[tag_list[i]]);
-    // LOG_INFO("PERIOD %d 放弃的是 %d", PERIOD, TAG_RANK[tag_list[i]]);
+    busy_area.push_back(tag_list[i]);
   }
+
   this->fin_num_last_period = 0;
   this->busy_num_last_period = 0;
 }
-
-
 
 void Manager::write_into_second(std::vector<std::tuple<int, int, int>> wirte_per_timestamp)
 {
@@ -339,26 +337,21 @@ void Manager::write_into_second(std::vector<std::tuple<int, int, int>> wirte_per
 
     int the_first_write_disk_id = 0;
 
+    std::vector<int> rep_here;
+
     for (int i = 0; i < REP_NUM; i++)
     {
-      // i = 0,第一个副本，存在磁盘本体 是 1，2，3，4，5
-      // i = 1,第二个副本，存在磁盘副本 是 6，7，8，9，10
-      if (i == 1)
-      {
-        continue;
-      }
 
       bool is_last_rep = false; // 判断需不需要写入后三分之一
 
-      if (i == 2) // 对于最后一个副本的情况
+      if (i != 0)
       {
         is_last_rep = true;
-        disk_id = disk_id + 6;
-        disk_id = disk_id == 11 ? 6 : disk_id;
-        if (rand() % 2)
-        {
-          disk_id -= 5;
-        }
+      }
+
+      while (find(rep_here.begin(), rep_here.end(), disk_id) != rep_here.end())
+      {
+        disk_id = disk_id % this->disk_num + 1;
       }
 
       int temp_cnt = 0;
@@ -366,21 +359,16 @@ void Manager::write_into_second(std::vector<std::tuple<int, int, int>> wirte_per
 
       while (tmp.empty()) // 在写入磁盘副本的时候不可能为空，因为这个时候的disk_id是本体已经写入的id，磁盘副本一定可以写入
       {
+        disk_id = disk_id % this->disk_num + 1;
 
-        if (!is_last_rep)
-        {
-          disk_id = disk_id % 5 + 1;
-        }
-        else
+        while (find(rep_here.begin(), rep_here.end(), disk_id) != rep_here.end())
         {
           disk_id = disk_id % this->disk_num + 1;
         }
-        if (is_last_rep && (disk_id == the_first_write_disk_id + 5 || disk_id == the_first_write_disk_id))
-        {
-          disk_id = disk_id % this->disk_num + 1;
-        }
+
         temp_cnt++;
-        if (temp_cnt == 5)
+
+        if (temp_cnt == 10)
         {
           tag_skew++;
           temp_cnt = 0;
@@ -391,27 +379,13 @@ void Manager::write_into_second(std::vector<std::tuple<int, int, int>> wirte_per
         {
           tmp = disk[disk_id].write_first(size, obj_id, tag, 0 - tag_skew, is_last_rep);
         }
-
-      }
-
-      // 现在temp里面存放的是 副本存的cell序列
-
-      if (!i) // 现在是第一个副本，我可以直接写入第二个副本
-      {
-        for (int j = 0; j < tmp.size(); j++)
-        {
-          disk[disk_id + 5].cells[tmp[j]].obj_id = obj_id;
-          disk[disk_id + 5].cells[tmp[j]].block_id = j;
-        }
-        objects[obj_id].replica[1] = disk_id + 5;
-        objects[obj_id].unit[1] = tmp;
       }
 
       objects[obj_id].replica[i] = disk_id;
       objects[obj_id].unit[i] = tmp;
-      the_first_write_disk_id = i == 0 ? disk_id : the_first_write_disk_id;
+      rep_here.push_back(disk_id);
     }
-    this->tag_write_disk_id[tag] = this->tag_write_disk_id[tag] % 5 + 1;
+    this->tag_write_disk_id[tag] = this->tag_write_disk_id[tag] % this->disk_num + 1;
   }
 }
 
@@ -419,12 +393,24 @@ bool Manager::req_need_busy(int obj_id)
 {
 
   // if (objects[obj_id].unit[0][0] > this->cell_per_disk * 82 / 100 && objects[obj_id].tag == 0)
-  if (IS_FIRST && objects[obj_id].unit[0][0] > this->cell_per_disk * FIRST_Turn_down / 100 )
+  // if (IS_FIRST && objects[obj_id].unit[0][0] > this->cell_per_disk * 30 / 100 && objects[obj_id].unit[0][0] < this->cell_per_disk * 55 / 100)
+  if (IS_FIRST && objects[obj_id].unit[0][0] > this->cell_per_disk * FIRST_Turn_down / 100)
   {
     return true;
   }
 
-  if(!IS_FIRST && find(busy_area.begin(),busy_area.end(),objects[obj_id].write_area)!=busy_area.end()){
+  if (IS_FIRST && !run_first)
+  {
+    return true;
+  }
+
+  if (!IS_FIRST && !run_second)
+  {
+    return true;
+  }
+
+  if (find(busy_area.begin(), busy_area.end(), objects[obj_id].write_area) != busy_area.end())
+  {
     return true;
   }
 
@@ -443,9 +429,15 @@ void Manager::build_request(const std::vector<std::tuple<int, int>> &batch)
     if (IS_FIRST)
       objects[obj_id].interview_timestamp.push_back(TIMESTAMP);
 
+    objects[obj_id].last_slice_interview_times++;
+
     if (req_need_busy(obj_id))
     {
-      busy_req_list.push_back(req_id);
+      if(IS_FIRST){
+        busy_req_list.push_back(req_id);
+      }else{
+        drop_req_list.push_back({req_id,TIMESTAMP});  
+      }
       continue;
     }
 
@@ -615,6 +607,11 @@ std::vector<int> Manager::busy_req()
     }
   }
 
+  for(auto [req_id,create_ts]:drop_req_list){
+      if(TIMESTAMP - create_ts == 105){
+        busy_req_list.push_back(req_id);
+      }
+  }
   busy_num_last_period += busy_req_list.size();
   // LOG_INFO("TIMESTAMP %d BUSY REQ %d", TIMESTAMP, static_cast<int>(busy_req_list.size()) - temp);
 
@@ -629,22 +626,18 @@ std::pair<std::vector<int>, std::vector<std::pair<int, int>>> Manager::exchange_
   std::vector<int> ops_size;
 
   // 处理前五个磁盘，然后接收返回的结果，通过结果更改后面五个磁盘
-  for (int i = 1; i <= this->disk_num / 2; i++)
+  for (int i = 1; i <= this->disk_num; i++)
   {
-      
+
     this->disk[i].exchange_time = init_exchange_time;
 
     std::vector<std::pair<int, int>> tmp = this->disk[i].per_disk_exchange_cell(tag_list);
 
     this->disk[i].mirror_exchange_cell(tmp);
 
-    this->disk[i + 5].mirror_exchange_cell(tmp);
-
     std::vector<std::pair<int, int>> tmp2 = this->disk[i].per_disk_exchange_cell2(tag_list);
 
     this->disk[i].mirror_exchange_cell(tmp2);
-
-    this->disk[i + 5].mirror_exchange_cell(tmp2);
 
     ops.insert(ops.end(), tmp.begin(), tmp.end());
 
@@ -652,9 +645,6 @@ std::pair<std::vector<int>, std::vector<std::pair<int, int>>> Manager::exchange_
 
     ops_size.push_back(tmp.size() + tmp2.size());
   }
-
-  ops_size.insert(ops_size.end(), ops_size.begin(), ops_size.end());
-  ops.insert(ops.end(), ops.begin(), ops.end());
 
   return {ops_size, ops};
 }
@@ -678,91 +668,199 @@ void Manager::clear()
   {
     disk.push_back(Disk(i, cell_per_disk, init_token, &objects, &request));
   }
-
-  for (int i = 1; i <= disk_num; i++)
-  {
-    int mirror_disk = i > 5 ? i - 5 : i + 5;
-    disk[i].mirror_disk_id = mirror_disk;
-    disk[i].mirror_point.push_back(&disk[mirror_disk].point[0]);
-    disk[i].mirror_point.push_back(&disk[mirror_disk].point[1]);
-    disk[i].mirror_point.push_back(&disk[mirror_disk].point[2]);
-  }
 }
 
-void Manager::cal_obj_tag(){
-  
-  int window_num = MAX_TIME_SLICING/forecast_window_len + 1;
+void Manager::cal_obj_tag()
+{
 
-  std::vector<std::vector<double>> tag_trait(tag_num+1,std::vector<double>(window_num,0));
+  int window_num = MAX_TIME_SLICING / forecast_window_len + 1;
 
-  std::vector<std::vector<double>> tag_obj_num(tag_num+1,std::vector<double>(window_num,0));
+  std::vector<std::vector<double>> tag_trait(tag_num + 1, std::vector<double>(window_num, 0));
 
-  for(auto [obj_id,obj]:objects){
-    if(obj.tag==0){
+  std::vector<std::vector<double>> tag_obj_num(tag_num + 1, std::vector<double>(window_num, 0));
+
+  for (auto [obj_id, obj] : objects)
+  {
+    if (obj.tag == 0)
+    {
       continue;
     }
 
-    int begin_wind = obj.create_timestamp/forecast_window_len;
-    int end_wind = obj.delete_timestamp/forecast_window_len;
+    int begin_wind = obj.create_timestamp / forecast_window_len;
+    int end_wind = obj.delete_timestamp / forecast_window_len;
 
-    while(begin_wind!=end_wind+1){
+    while (begin_wind != end_wind + 1)
+    {
       tag_obj_num[obj.tag][begin_wind]++;
       begin_wind++;
     }
 
-    for(auto interview_ts : obj.interview_timestamp){
-      int window_index = interview_ts/forecast_window_len;
+    for (auto interview_ts : obj.interview_timestamp)
+    {
+      int window_index = interview_ts / forecast_window_len;
       tag_trait[obj.tag][window_index]++;
     }
   }
 
-  for(int i =1 ;i<=this->tag_num;i++){
-    for(int j = 0;j<window_num;j++){
-      tag_trait[i][j]/=tag_obj_num[i][j];
+  for (int i = 1; i <= this->tag_num; i++)
+  {
+    for (int j = 0; j < window_num; j++)
+    {
+      tag_trait[i][j] /= tag_obj_num[i][j];
     }
   }
-  //遍历所有tag0，在有统计的时间段内与已知信息进行比较，选择差异最小的
+  // 遍历所有tag0，在有统计的时间段内与已知信息进行比较，选择差异最小的
 
-  for(auto &[obj_id,obj]:objects){
-      if(obj.tag!=0){
+  for (auto &[obj_id, obj] : objects)
+  {
+    if (obj.tag != 0)
+    {
+      continue;
+    }
+    // pair<window_index , read_times>
+    std::vector<double> read_per_obj(window_num, 0);
+    std::vector<double> distance(tag_num + 1, 0);
+
+    // 在有统计的window，计算与每一个tag的欧氏距离（绝对值？），然后选择最小的
+
+    for (auto interview_ts : obj.interview_timestamp)
+    {
+      int window_index = interview_ts / forecast_window_len;
+      // read_per_obj[window_index]+=obj.size;
+      read_per_obj[window_index]++;
+    }
+
+    int begin_wind = obj.create_timestamp / forecast_window_len;
+
+    int end_wind = obj.delete_timestamp / forecast_window_len;
+
+    for (int window_index = 0; window_index < window_num; window_index++)
+    {
+      if (window_index <= begin_wind || window_index >= end_wind)
+      {
         continue;
       }
-      //pair<window_index , read_times>
-      std::vector<double> read_per_obj(window_num,0);
-      std::vector<double> distance(tag_num+1,0);
-
-      //在有统计的window，计算与每一个tag的欧氏距离（绝对值？），然后选择最小的
-
-      for(auto interview_ts:obj.interview_timestamp){
-        int window_index = interview_ts/forecast_window_len;
-        // read_per_obj[window_index]+=obj.size;
-        read_per_obj[window_index]++;
+      for (int tag = 1; tag <= tag_num; tag++)
+      {
+        distance[tag] += (read_per_obj[window_index] - tag_trait[tag][window_index]) * (read_per_obj[window_index] - tag_trait[tag][window_index]);
+        // distance[tag]+=abs(read_per_obj[window_index]-tag_trait[tag][window_index]);
       }
+    }
+    int min_tag = 0;
+    double Min = 100000;
 
-      int begin_wind = obj.create_timestamp/forecast_window_len;
-
-      int end_wind = obj.delete_timestamp/forecast_window_len;
-
-      for(int window_index = 0 ;window_index<window_num;window_index++){
-          if(window_index<=begin_wind||window_index>=end_wind){
-            continue;
-          }
-          for(int tag = 1;tag<=tag_num;tag++){
-            distance[tag]+=(read_per_obj[window_index]-tag_trait[tag][window_index])*(read_per_obj[window_index]-tag_trait[tag][window_index]);
-            // distance[tag]+=abs(read_per_obj[window_index]-tag_trait[tag][window_index]);
-          }
+    for (int tag = 1; tag <= tag_num; tag++)
+    {
+      if (distance[tag] < Min)
+      {
+        Min = distance[tag];
+        min_tag = tag;
       }
-      int min_tag = 0;
-      double Min = 100000;
+    }
+    obj.tag = min_tag;
 
-      for(int tag = 1;tag<=tag_num;tag++){
-          if(distance[tag]<Min){
-            Min=distance[tag];
-            min_tag = tag;
-          }
+    // LOG_INFO("%d %d",obj_id,obj.tag);
+  }
+}
+
+void Manager::forecast_tag()
+{
+  // 需要开一个数组记录每个tag在每300个时间片的read特征
+  // 对于每一个tag0，如果有数据的window数量大于一个值，那么我们就可以对其进行tag分配
+  // 将它的tag赋为 -预测tag，可以在垃圾回收的时候移动到自己的tag区域
+  // 报busy的时候不要根据obj的写入区域
+  // 在确定一个区域不要时，对对应的obj进行标记
+
+  int window_num = TIMESTAMP / forecast_window_len + 1;
+
+  std::vector<std::vector<double>> tag_trait(tag_num + 1, std::vector<double>(window_num, 0));
+
+  std::vector<std::vector<double>> tag_obj_num(tag_num + 1, std::vector<double>(window_num, 0));
+
+  for (auto [obj_id, obj] : objects)
+  {
+    if (obj.tag <= 0)
+    {
+      continue;
+    }
+
+    int begin_wind = obj.create_timestamp / forecast_window_len;
+    int end_wind = std::min(obj.delete_timestamp / forecast_window_len, TIMESTAMP / forecast_window_len);
+
+    while (begin_wind != end_wind + 1)
+    {
+      tag_obj_num[obj.tag][begin_wind]++;
+      begin_wind++;
+    }
+
+    for (auto interview_ts : obj.interview_timestamp)
+    {
+      int window_index = interview_ts / forecast_window_len;
+      tag_trait[obj.tag][window_index]++;
+    }
+  }
+
+  for (int i = 1; i <= this->tag_num; i++)
+  {
+    for (int j = 0; j < window_num; j++)
+    {
+      tag_trait[i][j] /= tag_obj_num[i][j];
+    }
+  }
+  // 遍历所有tag0，在有统计的时间段内与已知信息进行比较，选择差异最小的
+
+  for (auto &[obj_id, obj] : objects)
+  {
+    if (obj.tag != 0)
+    {
+      continue;
+    }
+    // pair<window_index , read_times>
+    std::vector<double> read_per_obj(window_num, 0);
+    std::vector<double> distance(tag_num + 1, 0);
+
+    std::set<int> read_win;
+
+    for (auto interview_ts : obj.interview_timestamp)
+    {
+      int window_index = interview_ts / forecast_window_len;
+      read_per_obj[window_index]++;
+      read_win.insert(window_index);
+    }
+
+    if (read_win.size() < 20)
+    {
+      continue;
+    }
+
+    int begin_wind = obj.create_timestamp / forecast_window_len;
+
+    int end_wind = std::min(obj.delete_timestamp / forecast_window_len, TIMESTAMP / forecast_window_len);
+
+    for (int window_index = 0; window_index < window_num; window_index++)
+    {
+      if (window_index <= begin_wind || window_index >= end_wind)
+      {
+        continue;
       }
-      obj.tag = min_tag;
+      for (int tag = 1; tag <= tag_num; tag++)
+      {
+        distance[tag] += (read_per_obj[window_index] - tag_trait[tag][window_index]) * (read_per_obj[window_index] - tag_trait[tag][window_index]);
+      }
+    }
+    int min_tag = 0;
+    double Min = 100000;
 
-      // LOG_INFO("%d %d",obj_id,obj.tag);
+    for (int tag = 1; tag <= tag_num; tag++)
+    {
+      if (distance[tag] < Min)
+      {
+        Min = distance[tag];
+        min_tag = tag;
+      }
+    }
+    obj.tag = min_tag;
+
+    // LOG_INFO("%d %d",obj_id, obj.tag);
   }
 }

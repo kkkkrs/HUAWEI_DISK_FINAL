@@ -6,6 +6,7 @@ Object::Object() {
   unit.resize(REP_NUM);
   create_timestamp = 0;
   delete_timestamp = MAX_TIME_SLICING;
+  is_read = true;
   // block_req_num.assign(size,0);
 }
 

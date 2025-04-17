@@ -4,6 +4,7 @@
 #include "manager.h"
 #include <cstdio>
 #include <cstring>
+#include <iostream>
 
 int main()
 {
@@ -16,7 +17,7 @@ int main()
 
   REAL_CELL_NUM = V;
 
-  V = V * 69 / 100;
+  V = V * 39 / 100;
 
   int period_num = (T - 1) / FRE_PER_SLICING + 1;
 
@@ -32,17 +33,25 @@ int main()
     MAN.update_tag_rank();
     for (TIMESTAMP = 1; TIMESTAMP <= T + EXTRA_TIME; TIMESTAMP++)
     {
-      timestamp_action();
+      if (IS_FIRST)
+        timestamp_action();
       delete_action(MAN);
       write_action(MAN);
       read_action(MAN);
 
-      if(TIMESTAMP%slice_len==0){
+      if (IS_FIRST && TIMESTAMP % forecast_window_len == 0)
+      {
+        MAN.forecast_tag();
+      }
+
+      if (TIMESTAMP % slice_len == 0)
+      {
         SLICE++;
         MAN.update_tag_list();
-        if(!IS_FIRST)
+        if (IS_FIRST)
           MAN.update_busy_area();
       }
+
       if (TIMESTAMP % 1800 == 0)
       {
         PERIOD++;
@@ -57,5 +66,32 @@ int main()
       MAN.clear();
     }
   }
+
+  for (TIMESTAMP = 1; TIMESTAMP <= T + EXTRA_TIME; TIMESTAMP++)
+  {
+    timestamp_action();
+
+    printf("%s", delete_actions[TIMESTAMP].str().c_str());
+
+    printf("%s", write_actions[TIMESTAMP].str().c_str());
+    printf("%s", point_actions[TIMESTAMP].str().c_str());
+    printf("%s", fin_actions[TIMESTAMP].str().c_str());
+
+    if (TIMESTAMP + 105 >= MAX_TIME_SLICING)
+    {
+      printf("0\n");
+    }
+    else
+    {
+      printf("%s", busy_actions[TIMESTAMP + 105].str().c_str());
+    }
+
+    if (TIMESTAMP % 1800 == 0)
+    {
+      printf("%s", gc_actions[TIMESTAMP].str().c_str());
+    }
+    fflush(stdout);
+  }
+
   return 0;
 }

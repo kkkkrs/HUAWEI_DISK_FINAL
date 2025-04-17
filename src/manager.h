@@ -30,11 +30,15 @@ public:
   std::vector<std::vector<int>> tag_obj_cnt_per_slice;
   std::vector<std::vector<int>> tag_obj_read_per_slice;
   std::vector<std::vector<double>> tag_read_per_cell;
+
+  std::vector<int> tag_read_per_forcast_window;
   // std::vector<int> tag_obj_cnt_per_slice;
 
   std::vector<int> busy_req();
 
   std::vector<int> busy_area;
+
+  std::vector<std::pair<int,int>> drop_req_list;
 
   std::pair<int,int> find_disk(int tag);
 
@@ -43,6 +47,8 @@ public:
   void update_busy_area();
 
   void update_tag_rank();
+
+  void forecast_tag();
 
   void cal_obj_tag();
 

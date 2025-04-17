@@ -49,43 +49,31 @@ int Disk::find_min_area()
 
 std::vector<int> Disk::write_first(int size, int obj_id, int tag, int tag_skew, bool is_last_rep)
 {
-
+  
   int t_rank = TAG_RANK[tag] + tag_skew;
+
+  //t_rank的范围是从0到16，16是tag0
+
+  if (t_rank > 16 || t_rank < 0)
+  {
+      return std::vector<int>();
+  }
 
   int start, end;
   bool is_f_to_b = tag_skew >= 0;
   bool is_restrict = true;
 
-  if (t_rank > 15 || t_rank < 0)
-  {
-    if (TAG_RANK[tag] + tag_skew > 15 && TAG_RANK[tag] - tag_skew < 0)
-    {
-      tag = 0;
-    }
-    else
-    {
-      return std::vector<int>();
-    }
-  }
-  else
-  {
-    start = DISK_START[t_rank];   // 开始找寻的位置
-    end = DISK_START[t_rank + 1]; // 结束找寻的位置
-  }
+  //对于tag0来说，需要从t_rank = 16开始写入，结束到cell_num+1
 
-  if (tag == 0 && !is_last_rep)
-  {
-    is_f_to_b = true;
-    start = DISK_START[16];
-    end = this->cell_num + 1;
-    if (tag_skew > 5)
-    {
-      start = 1;
-      end = this->cell_num + 1;
-    }
-  }
+  //对于其他tag来说，从自己的区域开始，到下一个区域开始
 
-  // LOG_INFO("TAG %d START %d END %d",tag,start,end);
+  //如果tag偏移量不为0，那么就加上
+
+  start = DISK_START[t_rank];
+
+  end = DISK_START[t_rank+1];
+
+  LOG_INFO("TAG %d START %d END %d",tag,start,end);
 
   if (is_last_rep)
   {
@@ -149,9 +137,10 @@ std::vector<int> Disk::write_first(int size, int obj_id, int tag, int tag_skew, 
     move_point(start, is_f_to_b, is_restrict);
   }
 
-  if(!is_last_rep&&!IS_FIRST)
+  if (!is_last_rep)
+  {
     objects->at(obj_id).write_area = t_rank;
-  // objects->at(obj_id).write_area = TAG_RANK[tag];
+  }
 
   return wrote_cell_id;
 }
@@ -471,11 +460,13 @@ std::string Disk::get_ori_ops(int point_id)
   int temp_point = this->point[point_id].position;
   std::string ori_ops = "";
 
-  if(!run_first && IS_FIRST){
+  if (!run_first && IS_FIRST)
+  {
     return "1";
   }
 
-  if(!run_second && !IS_FIRST){
+  if (!run_second && !IS_FIRST)
+  {
     return "1";
   }
 
@@ -501,12 +492,8 @@ std::string Disk::get_ori_ops(int point_id)
   for (int i = 0; i < this->init_token; i++)
   {
 
-    if (temp_point == this->point[3 - point_id].position ||
-        temp_point == this->mirror_point[1]->position ||
-        temp_point == this->mirror_point[2]->position)
+    if (temp_point == this->point[3 - point_id].position)
     {
-      //      // LOG_INFO("TIMESTMP%d 磁头碰撞了",TIMESTAMP);
-      // this->point[point_id].since_last_jump=MAX_JUMP_TIME_BEFORE_PRE;
       break;
     }
 
@@ -532,11 +519,18 @@ std::string Disk::get_ori_ops(int point_id)
   {
     auto [max_req_num, jump_point] = find_jump_point(point_id, true);
 
-    if (max_req_num >= read_num * jump_req_num_threshold)
+    if (IS_FIRST && max_req_num >= read_num * jump_req_num_threshold_first)
     {
       // LOG_INFO("TIMESTAMP %d last %d",TIMESTAMP,this->point[point_id].since_last_jump);
       ori_ops = std::to_string(jump_point);
     }
+
+    if (!IS_FIRST && max_req_num >= read_num * jump_req_num_threshold_second)
+    {
+      // LOG_INFO("TIMESTAMP %d last %d",TIMESTAMP,this->point[point_id].since_last_jump);
+      ori_ops = std::to_string(jump_point);
+    }
+
     this->point[point_id].since_last_jump = 0;
   }
 
@@ -624,15 +618,6 @@ int Disk::cell_need_read(int cell_id, int point_id, bool is_shield, bool is_shie
         return 0;
       }
     }
-    if (cell_id - this->mirror_point[1]->position >= 0 && this->mirror_point[1]->reserve_end - cell_id >= 0)
-    {
-      return 0;
-    }
-
-    if (cell_id - this->mirror_point[2]->position >= 0 && this->mirror_point[2]->reserve_end - cell_id >= 0)
-    {
-      return 0;
-    }
   }
 
   int obj_id = this->cells[cell_id].obj_id;
@@ -648,7 +633,14 @@ int Disk::cell_need_read(int cell_id, int point_id, bool is_shield, bool is_shie
 
   if (is_shield_request)
   {
-    shield_request_req_num = countGreaterThanTimestamp((*objects)[obj_id].req_id_list, TIMESTAMP - shield_request_time);
+    if (IS_FIRST)
+    {
+      shield_request_req_num = countGreaterThanTimestamp((*objects)[obj_id].req_id_list, TIMESTAMP - shield_request_time_first);
+    }
+    else
+    {
+      shield_request_req_num = countGreaterThanTimestamp((*objects)[obj_id].req_id_list, TIMESTAMP - shield_request_time_second);
+    }
   }
 
   int req_num = std::max(0, ((*objects)[obj_id].block_req_num[block_id] - shield_request_req_num));
@@ -656,68 +648,27 @@ int Disk::cell_need_read(int cell_id, int point_id, bool is_shield, bool is_shie
   return req_num;
 }
 
-bool Disk::cell_is_Blank(int cell_id)
-{
-
-  if (cell_id < 10)
-  {
-    return false;
-  }
-
-  if (cells[cell_id].obj_id != 0)
-  {
-    return false;
-  }
-
-  bool cell_id_1 = cells[cell_id - 3].obj_id == 0 ? false : true;
-  bool cell_id_2 = cells[cell_id - 2].obj_id == 0 ? false : true;
-  bool cell_id_3 = cells[cell_id - 1].obj_id == 0 ? false : true;
-  bool cell_id_4 = cells[cell_id + 1].obj_id == 0 ? false : true;
-  bool cell_id_5 = cells[cell_id + 2].obj_id == 0 ? false : true;
-  bool cell_id_6 = cells[cell_id + 3].obj_id == 0 ? false : true;
-
-  if (cell_id_1 && cell_id_2 && cell_id_5 && cell_id_6)
-  {
-    return true;
-  }
-  return false;
-}
-
-bool Disk::cell_need_change(int cell_id)
-{
-  if (cell_id < 10)
-  {
-    return false;
-  }
-  if (cells[cell_id].obj_id == 0)
-  {
-    return false;
-  }
-
-  bool cell_id_0 = cells[cell_id - 4].obj_id == 0 ? false : true;
-  bool cell_id_1 = cells[cell_id - 3].obj_id == 0 ? false : true;
-  bool cell_id_2 = cells[cell_id - 2].obj_id == 0 ? false : true;
-  bool cell_id_3 = cells[cell_id - 1].obj_id == 0 ? false : true;
-  bool cell_id_4 = cells[cell_id + 1].obj_id == 0 ? false : true;
-  bool cell_id_5 = cells[cell_id + 2].obj_id == 0 ? false : true;
-  bool cell_id_6 = cells[cell_id + 3].obj_id == 0 ? false : true;
-  bool cell_id_7 = cells[cell_id + 4].obj_id == 0 ? false : true;
-
-  if (!cell_id_1 && !cell_id_0 && !cell_id_7 && !cell_id_6)
-  {
-    return true;
-  }
-  return false;
-}
-
 std::queue<int> Get_where_replace(std::string ori_ops, std::string replace_ops)
 {
   std::queue<int> ans;
-  for (int i = 0; i < ori_ops.size(); i++)
+  if (IS_FIRST)
   {
-    if (ori_ops[i] != replace_ops[i])
+    for (int i = 0; i < ori_ops.size(); i++)
     {
-      ans.push(i);
+      if (ori_ops[i] == 'p')
+      {
+        ans.push(i);
+      }
+    }
+  }
+  else
+  {
+    for (int i = 0; i < ori_ops.size(); i++)
+    {
+      if (ori_ops[i] != replace_ops[i])
+      {
+        ans.push(i);
+      }
     }
   }
   return ans;
@@ -733,19 +684,40 @@ std::queue<int> Disk::Get_isolate_r(std::string ops, int tag)
 
   int end = DISK_START[t_rank + 1];
 
-  for (int i = 1; i <= cell_num; i++)
+  if (IS_FIRST)
   {
-    if (i >= begin && i <= end)
+    for (int i = cell_num; i >= 0; i--)
     {
-      continue;
+      if (i >= begin && i <= end)
+      {
+        continue;
+      }
+      if (cells[i].obj_id == 0)
+      {
+        continue;
+      }
+      if ((*objects)[cells[i].obj_id].tag == tag)
+      {
+        ans.push(i - begin);
+      }
     }
-    if (cells[i].obj_id == 0)
+  }
+  else
+  {
+    for (int i = 0; i <= this->cell_num; i++)
     {
-      continue;
-    }
-    if ((*objects)[cells[i].obj_id].tag == tag)
-    {
-      ans.push(i - begin);
+      if (i >= begin && i <= end)
+      {
+        continue;
+      }
+      if (cells[i].obj_id == 0)
+      {
+        continue;
+      }
+      if ((*objects)[cells[i].obj_id].tag == tag)
+      {
+        ans.push(i - begin);
+      }
     }
   }
 
@@ -926,12 +898,10 @@ void Disk::mirror_exchange_cell(std::vector<std::pair<int, int>> change_list)
     if (first_obj_id)
     {
       (*objects)[first_obj_id].unit[0][first_block_id] = second;
-      (*objects)[first_obj_id].unit[1][first_block_id] = second;
     }
     if (second_obj_id)
     {
       (*objects)[second_obj_id].unit[0][second_block_id] = first;
-      (*objects)[second_obj_id].unit[1][second_block_id] = first;
     }
     std::swap(cells[first].obj_id, cells[second].obj_id);
     std::swap(cells[first].block_id, cells[second].block_id);
