@@ -76,6 +76,7 @@ int main()
     printf("%s", write_actions[TIMESTAMP].str().c_str());
     printf("%s", point_actions[TIMESTAMP].str().c_str());
     printf("%s", fin_actions[TIMESTAMP].str().c_str());
+    fflush(stdout);
 
     if (TIMESTAMP + 105 >= MAX_TIME_SLICING)
     {
@@ -86,11 +87,13 @@ int main()
       printf("%s", busy_actions[TIMESTAMP + 105].str().c_str());
     }
 
+    fflush(stdout);
+
     if (TIMESTAMP % 1800 == 0)
     {
       printf("%s", gc_actions[TIMESTAMP].str().c_str());
+      fflush(stdout);
     }
-    fflush(stdout);
   }
 
   return 0;

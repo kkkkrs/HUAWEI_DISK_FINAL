@@ -121,7 +121,7 @@ public:
 // #include <cmath>
 // #include <algorithm>
 // #include <limits>
-////// //#include "logger.h"
+//////// //#include "logger.h"
 
 // class TagScheduler {
 //     int tag_num;    // 总tag数量
@@ -218,7 +218,7 @@ public:
 //         std::reverse(path.begin(), path.end());
 
 //         // for(int i = 0;i<path.size();i++){
-////// //        //     LOG_INFO("TAG %d 和 TAG %d 的相关系数
+//////// //        //     LOG_INFO("TAG %d 和 TAG %d 的相关系数
 ///%d",path[i],path[i+1],dist[path[i]][path[i+1]]);
 //         // }
 
@@ -236,7 +236,7 @@ public:
 // // #include <algorithm>
 // // #include <limits>
 // // #include <stdexcept>
-////// //// #include "logger.h"
+//////// //// #include "logger.h"
 
 // // class CircularTagScheduler {
 // //     int tag_num;    // Tag总数（有效编号1~tag_num）
@@ -279,7 +279,7 @@ public:
 // //         // 验证数据维度
 // //         if(tag_request_count.size() != period_num+1 ||
 // //            tag_request_count[0].size() != tag_num+1) {
-////// ////             LOG_ERROR("数据维度不匹配: 期望 %dx%d 实际 %zdx%zu",
+//////// ////             LOG_ERROR("数据维度不匹配: 期望 %dx%d 实际 %zdx%zu",
 // //                      period_num+1, tag_num+1,
 // //                      tag_request_count.size(),
 // //                      tag_request_count.empty() ? 0 :
@@ -316,7 +316,7 @@ public:
 // //             return result_sequence;
 // //         }
 // //         catch(const std::exception& e) {
-////// ////             LOG_CRITICAL("优化过程异常: %s", e.what());
+//////// ////             LOG_CRITICAL("优化过程异常: %s", e.what());
 // //             throw; // 重新抛出异常
 // //         }
 // //     }

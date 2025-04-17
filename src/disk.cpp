@@ -1,6 +1,6 @@
 #include "disk.h"
 #include "constants.h"
-#include "logger.h"
+//#include "logger.h"
 #include <cmath>
 #include <cstddef>
 #include <utility>
@@ -49,31 +49,43 @@ int Disk::find_min_area()
 
 std::vector<int> Disk::write_first(int size, int obj_id, int tag, int tag_skew, bool is_last_rep)
 {
-  
+
   int t_rank = TAG_RANK[tag] + tag_skew;
-
-  //t_rank的范围是从0到16，16是tag0
-
-  if (t_rank > 16 || t_rank < 0)
-  {
-      return std::vector<int>();
-  }
 
   int start, end;
   bool is_f_to_b = tag_skew >= 0;
   bool is_restrict = true;
 
-  //对于tag0来说，需要从t_rank = 16开始写入，结束到cell_num+1
+  if (t_rank > 15 || t_rank < 0)
+  {
+    if (TAG_RANK[tag] + tag_skew > 15 && TAG_RANK[tag] - tag_skew < 0)
+    {
+      tag = 0;
+    }
+    else
+    {
+      return std::vector<int>();
+    }
+  }
+  else
+  {
+    start = DISK_START[t_rank];   // 开始找寻的位置
+    end = DISK_START[t_rank + 1]; // 结束找寻的位置
+  }
 
-  //对于其他tag来说，从自己的区域开始，到下一个区域开始
+  if (tag == 0 && !is_last_rep)
+  {
+    t_rank = 16;
+    is_f_to_b = true;
+    end = this->cell_num + 1;
+    if (tag_skew > 5)
+    {
+      start = 1;
+      end = this->cell_num + 1;
+    }
+  }
 
-  //如果tag偏移量不为0，那么就加上
-
-  start = DISK_START[t_rank];
-
-  end = DISK_START[t_rank+1];
-
-  LOG_INFO("TAG %d START %d END %d",tag,start,end);
+//  // LOG_INFO("TAG %d START %d END %d",tag,start,end);
 
   if (is_last_rep)
   {
@@ -140,6 +152,7 @@ std::vector<int> Disk::write_first(int size, int obj_id, int tag, int tag_skew, 
   if (!is_last_rep)
   {
     objects->at(obj_id).write_area = t_rank;
+//    // LOG_INFO("TAG %d ,T_RANK %d", tag, t_rank);
   }
 
   return wrote_cell_id;
@@ -280,7 +293,7 @@ std::pair<int, int> Disk::prosess_single_cell(int point_id, bool is_read)
 
   int consum_token = calculate_consum_token(point_id);
   this->point[point_id].token -= consum_token;
-  //  ////  // LOG_INFO("时间戳%d 磁盘%d 剩余token %d",TIMESTAMP
+//  //  ////  // LOG_INFO("时间戳%d 磁盘%d 剩余token %d",TIMESTAMP
   ///,this->disk_id,this->token);
   if (point[point_id].token < 0)
   {
@@ -521,13 +534,13 @@ std::string Disk::get_ori_ops(int point_id)
 
     if (IS_FIRST && max_req_num >= read_num * jump_req_num_threshold_first)
     {
-      // LOG_INFO("TIMESTAMP %d last %d",TIMESTAMP,this->point[point_id].since_last_jump);
+//      // LOG_INFO("TIMESTAMP %d last %d",TIMESTAMP,this->point[point_id].since_last_jump);
       ori_ops = std::to_string(jump_point);
     }
 
     if (!IS_FIRST && max_req_num >= read_num * jump_req_num_threshold_second)
     {
-      // LOG_INFO("TIMESTAMP %d last %d",TIMESTAMP,this->point[point_id].since_last_jump);
+//      // LOG_INFO("TIMESTAMP %d last %d",TIMESTAMP,this->point[point_id].since_last_jump);
       ori_ops = std::to_string(jump_point);
     }
 
@@ -633,12 +646,9 @@ int Disk::cell_need_read(int cell_id, int point_id, bool is_shield, bool is_shie
 
   if (is_shield_request)
   {
-    if (IS_FIRST)
-    {
+    if(IS_FIRST){
       shield_request_req_num = countGreaterThanTimestamp((*objects)[obj_id].req_id_list, TIMESTAMP - shield_request_time_first);
-    }
-    else
-    {
+    }else{
       shield_request_req_num = countGreaterThanTimestamp((*objects)[obj_id].req_id_list, TIMESTAMP - shield_request_time_second);
     }
   }

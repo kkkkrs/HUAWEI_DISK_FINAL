@@ -1,5 +1,5 @@
 #include "constants.h"
-#include "logger.h"
+//#include "logger.h"
 #include "manager.h"
 #include <cstdio>
 #include <cstring>
@@ -54,7 +54,7 @@ void delete_action(Manager &MAN)
     {
       delete_actions[TIMESTAMP] << r << "\n";
     }
-  // LOG_INFO("%s",delete_actions[TIMESTAMP].str().c_str());
+//  // LOG_INFO("%s",delete_actions[TIMESTAMP].str().c_str());
 
   }
 
@@ -259,7 +259,7 @@ void obj_tag_action(Manager &MAN)
       tag0num++;
     }
   }
-  // LOG_INFO("TAG为0的数量为 %d 总数量为 %d",tag0num,MAN.objects.size());
+//  // LOG_INFO("TAG为0的数量为 %d 总数量为 %d",tag0num,MAN.objects.size());
 
   int times = 0;
   scanf("%d", &times);
@@ -278,6 +278,6 @@ void obj_tag_action(Manager &MAN)
   MAN.cal_obj_tag();
 
   // for(auto [obj_id,obj]:MAN.objects){
-  //   LOG_INFO("%d %d",obj_id,obj.tag);
+//  //   LOG_INFO("%d %d",obj_id,obj.tag);
   // }
 }

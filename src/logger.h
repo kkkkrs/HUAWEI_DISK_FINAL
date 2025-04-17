@@ -10,16 +10,16 @@ class Logger {
 public:
   enum LogLevel { DEBUG, INFO, WARNING, ERROR };
 
- void log_init() {
-   setLoggingEnabled(is_logging);
+void log_init() {
+  setLoggingEnabled(is_logging);
     if (!isLoggingEnabled) {
       return;
     }
     time_t now = time(nullptr);
     char timestamp[32];
     strftime(timestamp, sizeof(timestamp), "%Y%m%d_%H%M%S", localtime(&now));
-   std::string logfile = "logs/日志" + std::string(timestamp) + ".log";
-   setLogFile(logfile.c_str());
+  std::string logfile = "logs/日志" + std::string(timestamp) + ".log";
+  setLogFile(logfile.c_str());
   }
 
   static Logger &getInstance() {
@@ -30,16 +30,16 @@ public:
   void setLogLevel(LogLevel level) { currentLevel = level; }
 
   void setLogFile(const char *filename) {
-   if (logFile != nullptr) {
-     fclose(logFile);
+  if (logFile != nullptr) {
+    fclose(logFile);
     }
-   logFile = fopen(filename, "a");
+  logFile = fopen(filename, "a");
   }
 
   // 修改 setLoggingEnabled 函数，接收一个布尔参数
   void setLoggingEnabled(bool enable) { isLoggingEnabled = enable; }
 
- void log(LogLevel level, const char *format, ...) {
+void log(LogLevel level, const char *format, ...) {
     // 检查日志是否开启
     if (!isLoggingEnabled)
       return;
@@ -70,30 +70,30 @@ public:
       break;
     }
 
-   if (logFile != nullptr) {
-     fprintf(logFile, "[%s] [%s] ", timeStr, levelStr);
+  if (logFile != nullptr) {
+    fprintf(logFile, "[%s] [%s] ", timeStr, levelStr);
       va_list args;
       va_start(args, format);
-     vfprintf(logFile, format, args);
+    vfprintf(logFile, format, args);
       va_end(args);
-     fprintf(logFile, "\n");
-     fflush(logFile);
+    fprintf(logFile, "\n");
+    fflush(logFile);
     }
   }
 
   ~Logger() {
-   if (logFile != nullptr) {
-     fclose(logFile);
+  if (logFile != nullptr) {
+    fclose(logFile);
     }
   }
 
 private:
- Logger() : currentLevel(INFO), logFile(nullptr), isLoggingEnabled(true) {}
+Logger() : currentLevel(INFO), logFile(nullptr), isLoggingEnabled(true) {}
   Logger(const Logger &) = delete;
   Logger &operator=(const Logger &) = delete;
 
   LogLevel currentLevel;
-  FILE *logFile;
+ FILE *logFile;
   // 添加一个布尔成员变量来控制日志是否开启
   bool isLoggingEnabled;
 };

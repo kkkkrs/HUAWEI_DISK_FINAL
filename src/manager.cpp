@@ -30,15 +30,15 @@ void Manager::Statistics()
 {
   if (IS_FIRST)
   {
-    LOG_INFO("ROUND 1");
+   LOG_INFO("ROUND 1");
   }
   else
   {
-    LOG_INFO("ROUND 2");
+   LOG_INFO("ROUND 2");
   }
-  LOG_INFO("READ_NUM %d READ_SCORE %.2f", fin_num, READ_SCORE);
-  LOG_INFO("BUSY_NUM %d BUSY_SCORE %.2f", busy_num, BUSY_SCORE);
-  LOG_INFO("SCORE %.2f", SCORE);
+ LOG_INFO("READ_NUM %d READ_SCORE %.2f", fin_num, READ_SCORE);
+ LOG_INFO("BUSY_NUM %d BUSY_SCORE %.2f", busy_num, BUSY_SCORE);
+ LOG_INFO("SCORE %.2f", SCORE);
 }
 
 std::pair<int, int> Manager::find_disk(int tag)
@@ -130,7 +130,7 @@ void Manager::write_into_first(std::vector<std::tuple<int, int, int>> wirte_per_
 
       std::vector<int> tmp = disk[disk_id].write_first(size, obj_id, tag, tag_skew, is_last_rep);
 
-      while (tmp.empty())
+      while (tmp.empty()) // 在写入磁盘副本的时候不可能为空，因为这个时候的disk_id是本体已经写入的id，磁盘副本一定可以写入
       {
         disk_id = disk_id % this->disk_num + 1;
 
@@ -178,7 +178,6 @@ void Manager::update_tag_rank()
     {
       DISK_START[i + 1] = this->cell_per_disk * FIRST_TAG_AREA / 16 + DISK_START[i];
     }
-    DISK_START[17] = this->cell_per_disk+1;
   }
   else
   {
@@ -318,6 +317,7 @@ void Manager::update_busy_area()
   for (int i = tag_list.size() - 1; i >= tag_list.size() - busy_area_num; i--)
   {
     busy_area.push_back(tag_list[i]);
+//    // LOG_INFO("SLICE %d 放弃的是 %d", SLICE, TAG_RANK[tag_list[i]]);
   }
 
   this->fin_num_last_period = 0;
@@ -534,7 +534,7 @@ std::vector<int> Manager::check_finish(std::vector<std::pair<int, int>> read_lis
 
   for (int i = 0; i < finish_list.size(); i++)
   {
-    //    // LOG_INFO("REQUEST FINISH %d",TIMESTAMP-request[finish_list[i]].create_timestamp);
+//    //    // LOG_INFO("REQUEST FINISH %d",TIMESTAMP-request[finish_list[i]].create_timestamp);
     int time = TIMESTAMP - request[finish_list[i]].create_timestamp;
 
     if (time <= 10)
@@ -593,7 +593,7 @@ std::vector<int> Manager::busy_req()
       BUSY_SCORE += (objects[obj_id].size + 1) * 0.5;
 
       busy_num++;
-      // LOG_INFO("TIMESTAMP %d TAG %d BUSY_REQ",TIMESTAMP,objects[obj_id].tag);
+//      // LOG_INFO("TIMESTAMP %d TAG %d BUSY_REQ",TIMESTAMP,objects[obj_id].tag);
 
       objects[obj_id].req_id_list.pop_front();
       objects[obj_id].update_block_req_num();
@@ -613,7 +613,7 @@ std::vector<int> Manager::busy_req()
       }
   }
   busy_num_last_period += busy_req_list.size();
-  // LOG_INFO("TIMESTAMP %d BUSY REQ %d", TIMESTAMP, static_cast<int>(busy_req_list.size()) - temp);
+//  // LOG_INFO("TIMESTAMP %d BUSY REQ %d", TIMESTAMP, static_cast<int>(busy_req_list.size()) - temp);
 
   return busy_req_list;
 }
@@ -759,7 +759,7 @@ void Manager::cal_obj_tag()
     }
     obj.tag = min_tag;
 
-    // LOG_INFO("%d %d",obj_id,obj.tag);
+//    // LOG_INFO("%d %d",obj_id,obj.tag);
   }
 }
 
@@ -861,6 +861,6 @@ void Manager::forecast_tag()
     }
     obj.tag = min_tag;
 
-    // LOG_INFO("%d %d",obj_id, obj.tag);
+//    // LOG_INFO("%d %d",obj_id, obj.tag);
   }
 }

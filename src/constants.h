@@ -15,12 +15,10 @@
 #define FRE_PER_SLICING (1800)
 #define MAX_TIME_SLICING (86400 + EXTRA_TIME + 1)
 
-
+#define LEAST_READ_NUM (500)
 //两轮共同的参数
 
-#define MAX_JUMP_TIME_BEFORE_PRE (13) // 3-15
-
-#define LEAST_READ_NUM (300)
+#define MAX_JUMP_TIME_BEFORE_PRE (9) // 3-15
 
 #define POINTER_RESTRICTION_RANGE (400) // 指针之间的屏蔽范围
 
@@ -30,7 +28,9 @@
 
 //第一轮的参数
 
-#define FIRST_Turn_down (80)
+#define LEAST_READ_NUM_FIRST (200)
+
+#define FIRST_Turn_down (75)
 
 #define FIRST_TAG_AREA (0.5)
 
@@ -41,6 +41,7 @@
 #define forecast_window_len (300)
 
 //第二轮的参数
+#define LEAST_READ_NUM_SECOND (200)
 
 #define jump_req_num_threshold_second (1.3) // jump需要最小的阈值倍数
 
