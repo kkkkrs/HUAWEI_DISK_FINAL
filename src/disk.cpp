@@ -463,11 +463,6 @@ std::string Disk::find_replacement_indices(const std::string &sequence, int pre_
   return ans;
 }
 
-void Disk::write_into(int obj_id, int tag, int size)
-{
-  int tag_middle = this->cell_num * 0.33 / 16 * tag;
-}
-
 std::string Disk::get_ori_ops(int point_id)
 {
   int temp_point = this->point[point_id].position;
@@ -730,23 +725,6 @@ std::queue<int> Disk::Get_isolate_r(std::string ops, int tag)
       }
     }
   }
-
-  // for (int i = ops.size() - 2; i > 0; i--)
-  // {
-  //   if (ops[i] == 'r' && ops[i - 1] != 'r' && ops[i + 1] != 'r')
-  //   {
-  //     ans.push(i);
-  //     ops[i] = 'p';
-  //   }
-  // }
-
-  // for (int i = ops.size() - 1; i > 0; i--)
-  // {
-  //   if (ops[i] == 'r')
-  //   {
-  //     ans.push(i);
-  //   }
-  // }
   return ans;
 }
 
@@ -759,15 +737,6 @@ std::queue<int> Disk::Get_isolate_r2(std::string ops, int tag)
   int begin = DISK_START[t_rank];
 
   int end = DISK_START[t_rank + 1];
-
-  // for (int i = ops.size() - 2; i > 0; i--)
-  // {
-  //   if (ops[i] == 'r' && ops[i - 1] != 'r' && ops[i + 1] != 'r')
-  //   {
-  //     ans.push(i);
-  //     ops[i] = 'p';
-  //   }
-  // }
 
   for (int i = ops.size() - 1; i > 0; i--)
   {

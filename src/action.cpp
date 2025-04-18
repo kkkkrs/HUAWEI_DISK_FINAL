@@ -259,7 +259,6 @@ void obj_tag_action(Manager &MAN)
       tag0num++;
     }
   }
-//  // LOG_INFO("TAG为0的数量为 %d 总数量为 %d",tag0num,MAN.objects.size());
 
   int times = 0;
   scanf("%d", &times);
@@ -269,15 +268,6 @@ void obj_tag_action(Manager &MAN)
     scanf("%d %d", &obj_id, &tag);
     MAN.objects[obj_id].tag = tag;
   }
-  // 首先统计出每种tag的特征信息，然后遍历每一个tag为0的object，给他们加上tag信息
-
-  // 首先统计出每个tag的在每个window的read平均值
-
-  // 对于tag0的obj，通过滑动window比较与tag的差异，选择差异最小的tag
 
   MAN.cal_obj_tag();
-
-  // for(auto [obj_id,obj]:MAN.objects){
-//  //   LOG_INFO("%d %d",obj_id,obj.tag);
-  // }
 }

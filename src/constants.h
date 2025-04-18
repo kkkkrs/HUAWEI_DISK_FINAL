@@ -31,11 +31,11 @@
 
 #define LEAST_READ_NUM_FIRST (200)
 
-#define FIRST_Turn_down (66)
+#define FIRST_Turn_down (70)
 
 #define FIRST_TAG_AREA (0.5)
 
-#define jump_req_num_threshold_first (1.5) // jump需要最小的阈值倍数
+#define jump_req_num_threshold_first (1.4) // jump需要最小的阈值倍数
 
 #define shield_request_time_first (30) // 第一轮请求屏蔽范围
 

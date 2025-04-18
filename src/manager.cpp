@@ -288,8 +288,8 @@ void Manager::update_tag_list()
     std::sort(tag_list.begin(), tag_list.end(),
               [tag_cell_num, tag_read](int a, int b)
               {
-                // return tag_read[a] * 1.0 / tag_cell_num > tag_read[b] * 1.0 / tag_cell_num[b];
-                return tag_read[a] > tag_read[b];
+                return tag_read[a] * 1.0 / tag_cell_num[a] > tag_read[b] * 1.0 / tag_cell_num[b];
+                // return tag_read[a] > tag_read[b];
               });
   }
   else
@@ -305,60 +305,8 @@ void Manager::update_tag_list()
 
 void Manager::update_busy_area()
 {
-  busy_area.clear();
-  std::vector<int> tag_read_num(this->tag_num + 1, 0);
-  std::vector<int> tag_cell_num(this->tag_num + 1, 0);
-  std::vector<double> readdividecell(this->tag_num + 1, 0.0);
-  std::vector<double> z_scores(this->tag_num + 1, 0.0);
   
-  for (auto [obj_id, obj] : objects)
-  {
-    if (obj.tag == 0)
-    {
-      continue;
-    }
-
-    if(obj.write_area!=TAG_RANK[obj.tag]){
-      continue;
-    }
-
-    tag_read_num[obj.tag] += obj.last_slice_interview_times;
-    tag_cell_num[obj.tag] += obj.size;
-  }
-  double sum = 0.0;
-  int valid_count = 0;
-  for (int i = 1; i <= this->tag_num; i++) {
-      if (tag_cell_num[i] != 0) {
-          readdividecell[i] = tag_read_num[i] *1.0 /tag_cell_num[i];
-          // LOG_INFO("%.2f",readdividecell[i]);
-          sum += readdividecell[i];
-          valid_count++;
-      }
-  }
-
-  double avg = sum / valid_count;
-
-  double variance_sum = 0.0;
-  for (int i = 1; i <= this->tag_num; i++) {
-      if (tag_cell_num[i] != 0) {
-          double diff = readdividecell[i] - avg;
-          variance_sum += diff * diff;
-      }
-  }
-  double sigma = (valid_count > 1) ? std::sqrt(variance_sum / (valid_count - 1)) : 0.0;
-  
-  const double Z_THRESHOLD = -0.4; 
-  
-  for (int i = 1; i <= this->tag_num; i++) {  
-          z_scores[i] = (readdividecell[i] - avg) / sigma;
-          if (z_scores[i] < Z_THRESHOLD) {
-             busy_area.push_back(TAG_RANK[i]);
-            //  LOG_INFO("readdividecell %.2f",readdividecell[i]);
-            //  LOG_INFO("TAG %d area %d",i,TAG_RANK[i]);
-          }
-  }
-}  
-
+}
 
 void Manager::write_into_second(std::vector<std::tuple<int, int, int>> wirte_per_timestamp)
 {
@@ -430,9 +378,15 @@ bool Manager::req_need_busy(int obj_id)
 
   // if (objects[obj_id].unit[0][0] > this->cell_per_disk * 82 / 100 && objects[obj_id].tag == 0)
   // if (IS_FIRST && objects[obj_id].unit[0][0] > this->cell_per_disk * 30 / 100 && objects[obj_id].unit[0][0] < this->cell_per_disk * 55 / 100)
-  if (IS_FIRST && objects[obj_id].unit[0][0] > this->cell_per_disk * FIRST_Turn_down / 100)
+  if (IS_FIRST && TIMESTAMP > 18000)
   {
-    return true;
+    for (auto cell_id : objects[obj_id].unit[0])
+    {
+      if (cell_id > this->cell_per_disk * FIRST_Turn_down / 100)
+      {
+        return true;
+      }
+    }
   }
 
   if (IS_FIRST && !run_first)
@@ -666,7 +620,6 @@ std::pair<std::vector<int>, std::vector<std::pair<int, int>>> Manager::exchange_
 
   std::vector<int> ops_size;
 
-  // 处理前五个磁盘，然后接收返回的结果，通过结果更改后面五个磁盘
   for (int i = 1; i <= this->disk_num; i++)
   {
 
@@ -692,6 +645,7 @@ std::pair<std::vector<int>, std::vector<std::pair<int, int>>> Manager::exchange_
 
 void Manager::clear()
 {
+  busy_area.clear();
   SCORE = 0;
   BUSY_SCORE = 0;
   READ_SCORE = 0;
@@ -869,7 +823,7 @@ void Manager::forecast_tag()
       read_win.insert(window_index);
     }
 
-    if (read_win.size() < 20)
+    if (read_win.size() < 16)
     {
       continue;
     }

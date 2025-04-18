@@ -47,13 +47,11 @@ int main()
       if (TIMESTAMP % slice_len == 0)
       {
         SLICE++;
-        if (IS_FIRST)
-          // MAN.update_busy_area();
-        MAN.update_tag_list();
       }
 
       if (TIMESTAMP % 1800 == 0)
       {
+        MAN.update_tag_list();
         PERIOD++;
         change_action(MAN);
       }
