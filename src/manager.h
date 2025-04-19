@@ -10,7 +10,8 @@
 
 class Manager {
 public:
-  Manager(int disk_num, int cell_per_disk, int init_token, int tag_num,int change_times, int period_num);
+  // Manager(int disk_num, int cell_per_disk, int init_token, int tag_num,int change_times, int period_num);
+  Manager(int disk_num, int cell_per_disk, int init_token, int tag_num, int exchange_time1,int exchange_time2, int period_num);
 
   std::pair<std::vector<std::string>, std::vector<int>> read_batch();
 
@@ -63,9 +64,12 @@ public:
   int tag_num;
   int period_num;
   int init_token;
-  int init_exchange_time;
+  int init_exchange_time1;
+  int init_exchange_time2;
   int busy_num_last_period;
   int fin_num_last_period;
+
+  int k1,k2;
 
   int busy_area_num;
 

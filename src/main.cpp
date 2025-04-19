@@ -11,9 +11,9 @@ int main()
 
   LOG_INIT();
 
-  int T, M, N, V, G, K;
+  int T, M, N, V, G, K1, K2;
 
-  scanf("%d%d%d%d%d%d", &T, &M, &N, &V, &G, &K);
+  scanf("%d%d%d%d%d%d%d", &T, &M, &N, &V, &G, &K1, &K2);
 
   REAL_CELL_NUM = V;
 
@@ -25,7 +25,7 @@ int main()
 
   fflush(stdout);
 
-  Manager MAN(N, V, G, M, K, period_num);
+  Manager MAN(N, V, G, M, K1, K2, period_num);
 
   for (int i = 1; i <= 2; i++)
   {

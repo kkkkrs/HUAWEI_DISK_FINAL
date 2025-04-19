@@ -12,8 +12,8 @@
 #include <string>
 #include <vector>
 
-Manager::Manager(int disk_num, int cell_per_disk, int init_token, int tag_num, int exchange_time, int period_num)
-    : disk_num(disk_num), cell_per_disk(cell_per_disk), tag_num(tag_num), period_num(period_num), init_exchange_time(exchange_time), init_token(init_token)
+Manager::Manager(int disk_num, int cell_per_disk, int init_token, int tag_num, int exchange_time1,int exchange_time2, int period_num)
+    : disk_num(disk_num), cell_per_disk(cell_per_disk), tag_num(tag_num), period_num(period_num), init_exchange_time1(exchange_time1),init_exchange_time2(exchange_time2), init_token(init_token)
 {
 
   this->fin_num_last_period = 0;
@@ -637,7 +637,11 @@ std::pair<std::vector<int>, std::vector<std::pair<int, int>>> Manager::exchange_
   for (int i = 1; i <= this->disk_num; i++)
   {
 
-    this->disk[i].exchange_time = init_exchange_time;
+    if(IS_FIRST){
+      this->disk[i].exchange_time = init_exchange_time1;
+    }else{
+      this->disk[i].exchange_time = init_exchange_time2;
+    }
 
     std::vector<std::pair<int, int>> tmp = this->disk[i].per_disk_exchange_cell(tag_list);
 

@@ -13,13 +13,13 @@ shift  # 把第一个参数移除，这样 $@ 就只剩下后续传给程序的�
 # 选择要运行的数据集
 case $choice in
   1)
-    python ./run.py interactor/interactor data/sample_practice_1.in "./src/code_craft" "$@"
+    python ./run.py interactor/interactor-live data/sample_official_1.in "./src/code_craft" "$@"
     ;;
   2)
-    python ./run.py interactor/interactor data/sample_practice_2.in "./src/code_craft" "$@"
+    python ./run.py interactor/interactor-live data/sample_official_2.in "./src/code_craft" "$@"
     ;;
   3)
-    python ./run.py interactor/interactor data/sample_practice_3.in "./src/code_craft" "$@"
+    python ./run.py interactor/interactor-live data/sample_official_3.in "./src/code_craft" "$@"
     ;;
   *)
     echo "❌ 参数错误！请输入 1、2 或 3 选择数据集。"
