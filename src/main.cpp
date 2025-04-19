@@ -70,7 +70,6 @@ int main()
     timestamp_action();
 
     printf("%s", delete_actions[TIMESTAMP].str().c_str());
-
     printf("%s", write_actions[TIMESTAMP].str().c_str());
     printf("%s", point_actions[TIMESTAMP].str().c_str());
     printf("%s", fin_actions[TIMESTAMP].str().c_str());

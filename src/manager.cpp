@@ -837,7 +837,7 @@ void Manager::forecast_tag()
       read_win.insert(window_index);
     }
 
-    if (read_win.size() < 16)
+    if (read_win.size() < LEAST_READ_WIND_NUM)
     {
       continue;
     }
