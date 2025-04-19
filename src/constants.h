@@ -31,6 +31,10 @@
 
 #define LEAST_READ_NUM_FIRST (200)
 
+// #define FIRST_Turn_down (68)
+
+// #define FIRST_TAG_AREA (0.6)
+
 #define FIRST_Turn_down (70)
 
 #define FIRST_TAG_AREA (0.5)

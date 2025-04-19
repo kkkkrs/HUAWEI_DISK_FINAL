@@ -625,15 +625,16 @@ std::pair<std::vector<int>, std::vector<std::pair<int, int>>> Manager::exchange_
 
     this->disk[i].exchange_time = init_exchange_time;
 
+
     std::vector<std::pair<int, int>> tmp = this->disk[i].per_disk_exchange_cell(tag_list);
 
     this->disk[i].mirror_exchange_cell(tmp);
+    
+    ops.insert(ops.end(), tmp.begin(), tmp.end());
 
     std::vector<std::pair<int, int>> tmp2 = this->disk[i].per_disk_exchange_cell2(tag_list);
 
     this->disk[i].mirror_exchange_cell(tmp2);
-
-    ops.insert(ops.end(), tmp.begin(), tmp.end());
 
     ops.insert(ops.end(), tmp2.begin(), tmp2.end());
 
