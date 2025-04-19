@@ -31,10 +31,25 @@ void Manager::Statistics()
   if (IS_FIRST)
   {
     LOG_INFO("ROUND 1");
+    LOG_INFO("GLOBAL: MAX_JUMP_TIME_BEFORE_PRE=%d", MAX_JUMP_TIME_BEFORE_PRE);
+    LOG_INFO("GLOBAL: POINTER_RESTRICTION_RANGE=%d", POINTER_RESTRICTION_RANGE);
+    LOG_INFO("GLOBAL: WINDOW_LEN=%d", WINDOW_LEN);
+    LOG_INFO("GLOBAL: slice_len=%d", slice_len);
+
+    // 第一轮专有参数
+    LOG_INFO("ROUND1: LEAST_READ_NUM_FIRST=%d", LEAST_READ_NUM);
+    LOG_INFO("ROUND1: FIRST_Turn_down=%d", FIRST_Turn_down);
+    LOG_INFO("ROUND1: FIRST_TAG_AREA=%.2f", FIRST_TAG_AREA);
+    LOG_INFO("ROUND1: jump_req_num_threshold_first=%.1f", jump_req_num_threshold_first);
+    LOG_INFO("ROUND1: shield_request_time_first=%d", shield_request_time_first);
+    LOG_INFO("ROUND1: forecast_window_len=%d", forecast_window_len);
   }
   else
   {
     LOG_INFO("ROUND 2");
+    LOG_INFO("ROUND2: LEAST_READ_NUM_SECOND=%d", LEAST_READ_NUM);
+    LOG_INFO("ROUND2: jump_req_num_threshold_second=%.1f", jump_req_num_threshold_second);
+    LOG_INFO("ROUND2: shield_request_time_second=%d", shield_request_time_second);
   }
   LOG_INFO("READ_NUM %d READ_SCORE %.2f", fin_num, READ_SCORE);
   LOG_INFO("BUSY_NUM %d BUSY_SCORE %.2f", busy_num, BUSY_SCORE);
@@ -305,7 +320,6 @@ void Manager::update_tag_list()
 
 void Manager::update_busy_area()
 {
-  
 }
 
 void Manager::write_into_second(std::vector<std::tuple<int, int, int>> wirte_per_timestamp)
@@ -625,11 +639,10 @@ std::pair<std::vector<int>, std::vector<std::pair<int, int>>> Manager::exchange_
 
     this->disk[i].exchange_time = init_exchange_time;
 
-
     std::vector<std::pair<int, int>> tmp = this->disk[i].per_disk_exchange_cell(tag_list);
 
     this->disk[i].mirror_exchange_cell(tmp);
-    
+
     ops.insert(ops.end(), tmp.begin(), tmp.end());
 
     std::vector<std::pair<int, int>> tmp2 = this->disk[i].per_disk_exchange_cell2(tag_list);

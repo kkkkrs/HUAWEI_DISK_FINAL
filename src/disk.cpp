@@ -1,6 +1,6 @@
 #include "disk.h"
 #include "constants.h"
-//#include "logger.h"
+// #include "logger.h"
 #include <cmath>
 #include <cstddef>
 #include <utility>
@@ -85,7 +85,7 @@ std::vector<int> Disk::write_first(int size, int obj_id, int tag, int tag_skew, 
     }
   }
 
-//  // LOG_INFO("TAG %d START %d END %d",tag,start,end);
+  //  // LOG_INFO("TAG %d START %d END %d",tag,start,end);
 
   if (is_last_rep)
   {
@@ -152,7 +152,7 @@ std::vector<int> Disk::write_first(int size, int obj_id, int tag, int tag_skew, 
   if (!is_last_rep)
   {
     objects->at(obj_id).write_area = t_rank;
-//    // LOG_INFO("TAG %d ,T_RANK %d", tag, t_rank);
+    //    // LOG_INFO("TAG %d ,T_RANK %d", tag, t_rank);
   }
 
   return wrote_cell_id;
@@ -293,7 +293,7 @@ std::pair<int, int> Disk::prosess_single_cell(int point_id, bool is_read)
 
   int consum_token = calculate_consum_token(point_id);
   this->point[point_id].token -= consum_token;
-//  //  ////  // LOG_INFO("时间戳%d 磁盘%d 剩余token %d",TIMESTAMP
+  //  //  ////  // LOG_INFO("时间戳%d 磁盘%d 剩余token %d",TIMESTAMP
   ///,this->disk_id,this->token);
   if (point[point_id].token < 0)
   {
@@ -529,13 +529,13 @@ std::string Disk::get_ori_ops(int point_id)
 
     if (IS_FIRST && max_req_num >= read_num * jump_req_num_threshold_first)
     {
-//      // LOG_INFO("TIMESTAMP %d last %d",TIMESTAMP,this->point[point_id].since_last_jump);
+      //      // LOG_INFO("TIMESTAMP %d last %d",TIMESTAMP,this->point[point_id].since_last_jump);
       ori_ops = std::to_string(jump_point);
     }
 
     if (!IS_FIRST && max_req_num >= read_num * jump_req_num_threshold_second)
     {
-//      // LOG_INFO("TIMESTAMP %d last %d",TIMESTAMP,this->point[point_id].since_last_jump);
+      //      // LOG_INFO("TIMESTAMP %d last %d",TIMESTAMP,this->point[point_id].since_last_jump);
       ori_ops = std::to_string(jump_point);
     }
 
@@ -641,9 +641,12 @@ int Disk::cell_need_read(int cell_id, int point_id, bool is_shield, bool is_shie
 
   if (is_shield_request)
   {
-    if(IS_FIRST){
+    if (IS_FIRST)
+    {
       shield_request_req_num = countGreaterThanTimestamp((*objects)[obj_id].req_id_list, TIMESTAMP - shield_request_time_first);
-    }else{
+    }
+    else
+    {
       shield_request_req_num = countGreaterThanTimestamp((*objects)[obj_id].req_id_list, TIMESTAMP - shield_request_time_second);
     }
   }
@@ -740,6 +743,14 @@ std::queue<int> Disk::Get_isolate_r2(std::string ops, int tag)
 
   for (int i = ops.size() - 1; i > 0; i--)
   {
+    // if (cells[i].obj_id == 0)
+    // {
+    //   continue;
+    // }
+    // if ((*objects)[cells[i].obj_id].tag == tag)
+    // {
+    //   ans.push(i - begin);
+    // }
     if (ops[i] == 'r')
     {
       ans.push(i);
