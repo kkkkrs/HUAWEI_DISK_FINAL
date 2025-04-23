@@ -9,7 +9,7 @@
 int main()
 {
 
-  LOG_INIT();
+//  LOG_INIT();
 
   int T, M, N, V, G, K1, K2;
 

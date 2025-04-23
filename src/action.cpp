@@ -1,5 +1,5 @@
 #include "constants.h"
-// #include "logger.h"
+//// #include "logger.h"
 #include "manager.h"
 #include <cstdio>
 #include <cstring>
@@ -54,7 +54,7 @@ void delete_action(Manager &MAN)
     {
       delete_actions[TIMESTAMP] << r << "\n";
     }
-    //  // LOG_INFO("%s",delete_actions[TIMESTAMP].str().c_str());
+//    //  // LOG_INFO("%s",delete_actions[TIMESTAMP].str().c_str());
   }
 
   fflush(stdout);

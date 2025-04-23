@@ -27,7 +27,7 @@
 
 #define slice_len (300)
 
-#define LEAST_READ_WIND_NUM (30)
+#define LEAST_READ_WIND_NUM (16)
 
 //第一轮的参数
 
@@ -37,13 +37,13 @@
 
 // #define FIRST_TAG_AREA (0.6)
 
-#define FIRST_Turn_down (70)
+#define FIRST_Turn_down (68)
 
-#define FIRST_TAG_AREA (0.5)
+#define FIRST_TAG_AREA (0.6)
 
 #define jump_req_num_threshold_first (1.4) // jump需要最小的阈值倍数
 
-#define shield_request_time_first (30) // 第一轮请求屏蔽范围
+#define shield_request_time_first (33) // 第一轮请求屏蔽范围
 
 #define forecast_window_len (300)
 
