@@ -12,8 +12,8 @@
 #include <string>
 #include <vector>
 
-Manager::Manager(int disk_num, int cell_per_disk, int init_token, int tag_num, int exchange_time1,int exchange_time2, int period_num)
-    : disk_num(disk_num), cell_per_disk(cell_per_disk), tag_num(tag_num), period_num(period_num), init_exchange_time1(exchange_time1),init_exchange_time2(exchange_time2), init_token(init_token)
+Manager::Manager(int disk_num, int cell_per_disk, int init_token, int tag_num, int exchange_time1, int exchange_time2, int period_num)
+    : disk_num(disk_num), cell_per_disk(cell_per_disk), tag_num(tag_num), period_num(period_num), init_exchange_time1(exchange_time1), init_exchange_time2(exchange_time2), init_token(init_token)
 {
 
   this->fin_num_last_period = 0;
@@ -30,30 +30,30 @@ void Manager::Statistics()
 {
   if (IS_FIRST)
   {
-//    LOG_INFO("ROUND 1");
-//    LOG_INFO("GLOBAL: MAX_JUMP_TIME_BEFORE_PRE=%d", MAX_JUMP_TIME_BEFORE_PRE);
-//    LOG_INFO("GLOBAL: POINTER_RESTRICTION_RANGE=%d", POINTER_RESTRICTION_RANGE);
-//    LOG_INFO("GLOBAL: WINDOW_LEN=%d", WINDOW_LEN);
-//    LOG_INFO("GLOBAL: slice_len=%d", slice_len);
+    //    LOG_INFO("ROUND 1");
+    //    LOG_INFO("GLOBAL: MAX_JUMP_TIME_BEFORE_PRE=%d", MAX_JUMP_TIME_BEFORE_PRE);
+    //    LOG_INFO("GLOBAL: POINTER_RESTRICTION_RANGE=%d", POINTER_RESTRICTION_RANGE);
+    //    LOG_INFO("GLOBAL: WINDOW_LEN=%d", WINDOW_LEN);
+    //    LOG_INFO("GLOBAL: slice_len=%d", slice_len);
 
     // 第一轮专有参数
-//    LOG_INFO("ROUND1: LEAST_READ_NUM_FIRST=%d", LEAST_READ_NUM);
-//    LOG_INFO("ROUND1: FIRST_Turn_down=%d", FIRST_Turn_down);
-//    LOG_INFO("ROUND1: FIRST_TAG_AREA=%.2f", FIRST_TAG_AREA);
-//    LOG_INFO("ROUND1: jump_req_num_threshold_first=%.1f", jump_req_num_threshold_first);
-//    LOG_INFO("ROUND1: shield_request_time_first=%d", shield_request_time_first);
-//    LOG_INFO("ROUND1: forecast_window_len=%d", forecast_window_len);
+    //    LOG_INFO("ROUND1: LEAST_READ_NUM_FIRST=%d", LEAST_READ_NUM);
+    //    LOG_INFO("ROUND1: FIRST_Turn_down=%d", FIRST_Turn_down);
+    //    LOG_INFO("ROUND1: FIRST_TAG_AREA=%.2f", FIRST_TAG_AREA);
+    //    LOG_INFO("ROUND1: jump_req_num_threshold_first=%.1f", jump_req_num_threshold_first);
+    //    LOG_INFO("ROUND1: shield_request_time_first=%d", shield_request_time_first);
+    //    LOG_INFO("ROUND1: forecast_window_len=%d", forecast_window_len);
   }
   else
   {
-//    LOG_INFO("ROUND 2");
-//    LOG_INFO("ROUND2: LEAST_READ_NUM_SECOND=%d", LEAST_READ_NUM);
-//    LOG_INFO("ROUND2: jump_req_num_threshold_second=%.1f", jump_req_num_threshold_second);
-//    LOG_INFO("ROUND2: shield_request_time_second=%d", shield_request_time_second);
+    //    LOG_INFO("ROUND 2");
+    //    LOG_INFO("ROUND2: LEAST_READ_NUM_SECOND=%d", LEAST_READ_NUM);
+    //    LOG_INFO("ROUND2: jump_req_num_threshold_second=%.1f", jump_req_num_threshold_second);
+    //    LOG_INFO("ROUND2: shield_request_time_second=%d", shield_request_time_second);
   }
-//  LOG_INFO("READ_NUM %d READ_SCORE %.2f", fin_num, READ_SCORE);
-//  LOG_INFO("BUSY_NUM %d BUSY_SCORE %.2f", busy_num, BUSY_SCORE);
-//  LOG_INFO("SCORE %.2f", SCORE);
+  //  LOG_INFO("READ_NUM %d READ_SCORE %.2f", fin_num, READ_SCORE);
+  //  LOG_INFO("BUSY_NUM %d BUSY_SCORE %.2f", busy_num, BUSY_SCORE);
+  //  LOG_INFO("SCORE %.2f", SCORE);
 }
 
 std::pair<int, int> Manager::find_disk(int tag)
@@ -541,7 +541,7 @@ std::vector<int> Manager::check_finish(std::vector<std::pair<int, int>> read_lis
 
   for (int i = 0; i < finish_list.size(); i++)
   {
-//    //    //    // LOG_INFO("REQUEST FINISH %d",TIMESTAMP-request[finish_list[i]].create_timestamp);
+    //    //    //    // LOG_INFO("REQUEST FINISH %d",TIMESTAMP-request[finish_list[i]].create_timestamp);
     int time = TIMESTAMP - request[finish_list[i]].create_timestamp;
 
     if (time <= 10)
@@ -600,7 +600,7 @@ std::vector<int> Manager::busy_req()
       BUSY_SCORE += (objects[obj_id].size + 1) * 0.5;
 
       busy_num++;
-//      //      // LOG_INFO("TIMESTAMP %d TAG %d BUSY_REQ",TIMESTAMP,objects[obj_id].tag);
+      //      //      // LOG_INFO("TIMESTAMP %d TAG %d BUSY_REQ",TIMESTAMP,objects[obj_id].tag);
 
       objects[obj_id].req_id_list.pop_front();
       objects[obj_id].update_block_req_num();
@@ -622,7 +622,7 @@ std::vector<int> Manager::busy_req()
     }
   }
   busy_num_last_period += busy_req_list.size();
-//  //  // LOG_INFO("TIMESTAMP %d BUSY REQ %d", TIMESTAMP, static_cast<int>(busy_req_list.size()) - temp);
+  //  //  // LOG_INFO("TIMESTAMP %d BUSY REQ %d", TIMESTAMP, static_cast<int>(busy_req_list.size()) - temp);
 
   return busy_req_list;
 }
@@ -637,9 +637,12 @@ std::pair<std::vector<int>, std::vector<std::pair<int, int>>> Manager::exchange_
   for (int i = 1; i <= this->disk_num; i++)
   {
 
-    if(IS_FIRST){
+    if (IS_FIRST)
+    {
       this->disk[i].exchange_time = init_exchange_time1;
-    }else{
+    }
+    else
+    {
       this->disk[i].exchange_time = init_exchange_time2;
     }
 
@@ -772,7 +775,7 @@ void Manager::cal_obj_tag()
     }
     obj.tag = min_tag;
 
-//    //    // LOG_INFO("%d %d",obj_id,obj.tag);
+    //    //    // LOG_INFO("%d %d",obj_id,obj.tag);
   }
 }
 
@@ -874,6 +877,6 @@ void Manager::forecast_tag()
     }
     obj.tag = min_tag;
 
-//    //    // LOG_INFO("%d %d",obj_id, obj.tag);
+    //    //    // LOG_INFO("%d %d",obj_id, obj.tag);
   }
 }
