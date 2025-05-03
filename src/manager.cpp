@@ -119,6 +119,11 @@ void Manager::write_into_first(std::vector<std::tuple<int, int, int>> wirte_per_
     objects[obj_id].tag = tag;
     objects[obj_id].block_req_num.assign(size, 0);
     objects[obj_id].create_timestamp = TIMESTAMP;
+    if(tag==0){
+      objects[obj_id].is_tag_0 = true;
+    }else{
+      objects[obj_id].is_tag_0 = false;
+    }
 
     int tag_skew = 0;
 
@@ -729,10 +734,10 @@ void Manager::cal_obj_tag()
 
   for (auto &[obj_id, obj] : objects)
   {
-    if (obj.tag != 0)
-    {
-      continue;
-    }
+    // if (obj.tag != 0)
+    // {
+    //   continue;
+    // }
     // pair<window_index , read_times>
     std::vector<double> read_per_obj(window_num, 0);
     std::vector<double> distance(tag_num + 1, 0);
@@ -827,10 +832,13 @@ void Manager::forecast_tag()
 
   for (auto &[obj_id, obj] : objects)
   {
-    if (obj.tag != 0)
-    {
+    if(!obj.is_tag_0){
       continue;
     }
+    // if (obj.tag != 0)
+    // {
+    //   continue;
+    // }
     // pair<window_index , read_times>
     std::vector<double> read_per_obj(window_num, 0);
     std::vector<double> distance(tag_num + 1, 0);

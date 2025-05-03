@@ -12,6 +12,7 @@ public:
   std::vector<std::vector<int>> unit;
   int size;
   int tag;
+  bool is_tag_0;
   std::vector<int> block_req_num;
   std::deque<int> req_id_list;
 
