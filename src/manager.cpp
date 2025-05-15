@@ -18,6 +18,8 @@ Manager::Manager(int disk_num, int cell_per_disk, int init_token, int tag_num, i
 
   this->fin_num_last_period = 0;
 
+  this->req_num = 0;
+
   this->tag_write_disk_id.assign(tag_num + 1, 1);
 
   for (int i = 0; i <= disk_num; i++)
@@ -657,13 +659,19 @@ std::pair<std::vector<int>, std::vector<std::pair<int, int>>> Manager::exchange_
 
     ops.insert(ops.end(), tmp.begin(), tmp.end());
 
+    std::vector<std::pair<int, int>> tmp3 = this->disk[i].per_disk_exchange_cell(tag_list);
+
+    this->disk[i].mirror_exchange_cell(tmp3);
+
+    ops.insert(ops.end(), tmp3.begin(), tmp3.end());
+
     std::vector<std::pair<int, int>> tmp2 = this->disk[i].per_disk_exchange_cell2(tag_list);
 
     this->disk[i].mirror_exchange_cell(tmp2);
 
     ops.insert(ops.end(), tmp2.begin(), tmp2.end());
 
-    ops_size.push_back(tmp.size() + tmp2.size());
+    ops_size.push_back(tmp.size() + tmp3.size() + tmp2.size());
   }
 
   return {ops_size, ops};

@@ -69,6 +69,8 @@ public:
   int busy_num_last_period;
   int fin_num_last_period;
 
+  int req_num;
+
   int k1,k2;
 
   int busy_area_num;

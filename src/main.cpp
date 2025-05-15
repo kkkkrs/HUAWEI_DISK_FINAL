@@ -9,7 +9,7 @@
 int main()
 {
 
-//  LOG_INIT();
+ LOG_INIT();
 
   int T, M, N, V, G, K1, K2;
 
@@ -52,6 +52,8 @@ int main()
       if (TIMESTAMP % 1800 == 0)
       {
         MAN.update_tag_list();
+        LOG_INFO("REQ_NUM %d ",MAN.req_num);
+        MAN.req_num = 0;
         PERIOD++;
         change_action(MAN);
       }

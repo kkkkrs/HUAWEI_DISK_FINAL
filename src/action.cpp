@@ -130,6 +130,7 @@ void read_action(Manager &MAN)
   {
     int num_read;
     scanf("%d", &num_read);
+    MAN.req_num+=num_read;
     requests.resize(num_read);
 
     for (int i = 0; i < num_read; i++)

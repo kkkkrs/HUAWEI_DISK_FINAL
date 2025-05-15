@@ -27,7 +27,7 @@
 
 #define slice_len (300)
 
-#define LEAST_READ_WIND_NUM (16)
+#define LEAST_READ_WIND_NUM (6)
 
 //第一轮的参数
 
@@ -37,7 +37,7 @@
 
 // #define FIRST_TAG_AREA (0.6)
 
-#define FIRST_Turn_down (68)
+#define FIRST_Turn_down (60)
 
 #define FIRST_TAG_AREA (0.6)
 
